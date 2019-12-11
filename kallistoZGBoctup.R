@@ -447,7 +447,7 @@ summary(res)
 # Salvar .csv Wald test p-value: condition chikv rec vs control fgsea
 write.csv(as.data.frame(res), file = './GSEA/gbs/condition_zika_gbs_gbs_rec_vs_control.csv')
 
-## Log fold change shrinkage for visualization and ranking¶
+## Log fold change shrinkage for visualization and ranking
 # Contração log fod change para visualização e ranqueamento.
 # Shrinkage of effect size (LFC estimates)
 resultsNames(dds)
