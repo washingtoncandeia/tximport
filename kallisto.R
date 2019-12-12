@@ -1,6 +1,6 @@
 ##---------------------------------------------
 # Análise em Nível de Transcrito Kallisto
-# Utilizando Triplicatas
+# Utilizando Octuplicatas
 # Wald test p-value: condition zika vs control 
 # Data: 11/12/2019
 ##---------------------------------------------
