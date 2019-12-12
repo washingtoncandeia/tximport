@@ -305,7 +305,6 @@ mode(samples)
 rownames(samples) <- samples$run
 
 samples
-samples[ , c('pop', 'center', 'run', 'condition', 'replicate')]
 
 # Relevel: ajustando a condição referência para análise
 #samples$condition <- relevel(samples$condition, ref = 'control')
@@ -367,8 +366,7 @@ dds.txi <- DESeqDataSetFromTximport(txi = txi.kallisto,
                                     colData = samples,
                                     design = ~condition)
 
-# Agora, o objeto dds.Txi pode ser usado como aquele dds nos
-# passos subsequentes de DESeq2.
+# Agora, o objeto dds.Txi pode ser usado como aquele dds nos passos subsequentes de DESeq2.
 head(dds.txi$condition)
 
 ## Pre-filtering
@@ -379,94 +377,81 @@ keep <- rowSums(counts(dds.txi)) >= 10
 dds <- dds.txi[keep,]
 
 # Observar
-head(dds$condition)
-
-# Relevel factor para control como referencia
-#reference <- 'control'
-head(dds$condition, 9)
-# Relevel como exemplo:
-#dds$condition <- relevel(dds$condition, ref = "control")
-
+head(dds$condition, 12)
 
 ### Análise de Expressão Diferencial (DE)
 # Objeto dds por DESeq2
 dds <- DESeq(dds)
 
 # A função results gera tabelas de resultados.
-# condition chikv rec vs control 
 res <- results(dds)
-
+head(res)
+summary(res)
 # Note que podemos especificar o coeficiente ou contraste 
 # que queremos construir como uma tabela de resultados, usando:
-#res <- results(dds, contrast = c('condition', 'control', 'chikv'))
+#res <- results(dds, contrast = c('condition', 'zika', 'control'))
 
-# Visualizar
-res
-# Summary
-summary(res)
-
-## Criar csv (pode ser usado em fgsea)
-# Salvar .csv Wald test p-value: condition chikv rec vs control fgsea
+### Criar csv (pode ser usado em fgsea)
+## Salvar .csv Wald test p-value: condition zika vs control fgsea
 write.csv(as.data.frame(res), file = './GSEA/chikv/condition_chikv_rec_vs_control_GSEA.csv')
 
-## Log fold change shrinkage for visualization and ranking¶
-# Contração log fod change para visualização e ranqueamento.
-# Shrinkage of effect size (LFC estimates)
+#### LFC - Log2 Fold Changes Shrinkage
 resultsNames(dds)
 
-### LFC - Log2 Fold Changes Shrinkage
-## Visualizando para log2 fold changes shrinkage, LFC (Shrinkage of Effect Size)
-# associado com mudanças log2 fold changes advindas de baixas contagens de genes
-# sem requerimento de thresholds de filtragem arbitrários.
-# Para contrair (shrink) LFC passar objeto dds para função lfcShrink:
+# Contrair (shrinkage) LFC: passar objeto dds para função lfcShrink
 resLFC <- lfcShrink(dds, coef = 'condition_chikv_rec_vs_control', type = 'apeglm')  # coef = 3
 
-# Observar
-resLFC
+head(resLFC)
+
 # Summary
 summary(resLFC)
 
 # FDR cutoff, alpha.
 res05 <- results(dds, alpha=0.05)
+
+# Summary
 summary(res05)
 
-### Independent Hypothesis Weighting
-## Ponderação de Hipóteses Independentes
+# Ordenanado resultados menor p-value:
+resOrdered <- res[order(res$pvalue), ]
+
+# Summary
+summary(resOrdered)
+# Criar csv (pode ser usado em fgsea)
+write.csv(as.data.frame(resOrdered), file = './GSEA/chikv/GSEA_chikv_rec_vs_control_resOrdered.csv')
+read.table('./GSEA/chikv/GSEA_chikv_rec_vs_control_resOrdered.csv', header = TRUE,  sep = '\t',  stringsAsFactors = FALSE)
+
+## Independent Hypothesis Weighting
 # Filtragem de p value: ponderar (weight) hipóteses para otimizar o poder.
-# Está disponível no Bioconductor sob nome IHW.
 resIHW <- results(dds, filterFun = ihw)
 # Metadados
 metadata(resIHW)$ihwResult
 
-
+# Observação de estatística de cada objeto da análise:
 # Summary
 summary(res)
 # Summary
 summary(res05)
 # Summary
-summary(resIHW)
-# Summary
 summary(resLFC)
+# Summary
+summary(resOrdered)
+# Summary
+summary(resIHW)
 
 # Quantos p-values são menores que 0.1?
 sum(res$padj < 0.1, na.rm = TRUE)
 # Quantos p-values são menores que 0.1?
 sum(res05$padj < 0.1, na.rm=TRUE)
 # Quantos p-values são menores que 0.1?
-sum(resIHW$padj < 0.1, na.rm=TRUE)
-# Quantos p-values são menores que 0.1?
 sum(resLFC$padj < 0.1, na.rm = TRUE)
-
 
 # Quantos p-adjusted são menores que 0.05?
 sum(res$padj < 0.05, na.rm = TRUE)
 # Quantos p-adjusted são menores que 0.05?
 sum(res05$padj < 0.05, na.rm = TRUE)
-# Quantos p-adjusted são menores que 0.05? 
-sum(resIHW$padj < 0.05, na.rm=TRUE)
 # Quantos p-values são menores que 0.05?
 sum(resLFC$padj < 0.05, na.rm = TRUE)
-
 
 
 ##### Parte V - Exploração de Resultados
@@ -477,7 +462,6 @@ sum(resLFC$padj < 0.05, na.rm = TRUE)
 # res05 (padj < 0.05)
 # resOrdered
 # resLFC
-# resIHW
 
 # A função plotMA mostra os log2 fold change atribuível a uma dada variável
 # sobre a média de contagens normalizadas para todas as amostras no DESeqDataSet.
@@ -486,23 +470,24 @@ plotMA(res , ylim = c(-2, 2))
 # Objeto com alpha < 0.05 (adjusted p-value < 0.1)
 plotMA(res05, ylim = c(-2, 2))
 
-# Objeto reOrdenado
-plotMA(resOrdered, ylim = c(-2, 2))
-
 # Objeto resLFC
 plotMA(resLFC, ylim = c(-2, 2))
+
+# Objeto reOrdenado
+plotMA(resOrdered, ylim = c(-2, 2))
 
 # Objeto resIHW
 plotMA(resIHW, ylim = c(-2, 2))
 
 # Agora, observar os plots juntos
+# Versão 1
 par(mfrow=c(2,3), mar=c(4,4,4,2))
 xlim <- c(1,1e5); ylim <- c(-3,3)
-plotMA(res, xlim=xlim, ylim=ylim, main="Chikungunya vs Control \n(pdaj < 0.1)")
-plotMA(resOrdered, xlim=xlim, ylim=ylim, main="Chikungunya vs Control \n(Reordenado por menor pvalue)")
-plotMA(resLFC, xlim=xlim, ylim=ylim, main="Chikungunya vs Control \n(LFC)")
-plotMA(res05, xlim=xlim, ylim=ylim, main="Chikungunya vs Control \n(padj < 0.05)")
-plotMA(resIHW, xlim=xlim, ylim=ylim, main="Chikungunya vs Control \n(IHW)")
+plotMA(res, xlim=xlim, ylim=ylim, main="Chikungunya rec vs Control \n(pdaj < 0.1)")
+plotMA(resOrdered, xlim=xlim, ylim=ylim, main="Chikungunya rec vs Control \n(Reordenado por menor pvalue)")
+plotMA(resLFC, xlim=xlim, ylim=ylim, main="Chikungunya rec vs Control \n(LFC)")
+plotMA(resIHW, xlim=xlim, ylim=ylim, main="Chikungunya rec vs Control \n(IHW)")
+plotMA(res05, xlim=xlim, ylim=ylim, main="Chikungunya rec vs Control \n(padj < 0.05)")
 # Pontos em vermelho: se o adjusted p value for menor que 0.1.
 
 ### Alternative Shrinkage Estimators
@@ -511,39 +496,38 @@ plotMA(resIHW, xlim=xlim, ylim=ylim, main="Chikungunya vs Control \n(IHW)")
 # Especificar o coeficiente pela ordem em que aparece em results(dds)
 # O coeficiente usado em lfcShrink anterior (resNorm) foi "condition chikv vs control"
 # Porém, é possível especificar o coeficiente pela ordem em que aparece quando se usa resultsnames(dds):
-resultsNames(dds)
 
 # Em argumento type, pode-se utilar os parâmetros: ashr, apeglm e normal.
-# a. ashr - adaptive shrinkage estimator from the ashr package (Stephens 2016)
-# b. apeglm - the adaptive t prior shrinkage estimator from the apeglm package (Zhu, Ibrahim, and Love 2018).
+# a. ashr - Adaptive Shrinkage Estimator from the ashr package (Stephens 2016)
+# b. apeglm (LFC) - Adaptive t Prior Shrinkage Estimator from the apeglm package (Zhu, Ibrahim and Love 2018).
 # c. normal - estimador shrinkage original de DESeq2 (an adaptive Normal distribution as prior).
 
+# Para observar o número do coef
+resultsNames(dds) 
 
-# Usaremos o coeficiente como 2, pois é o que indica condition_chikv_vs_control.
-resultsNames(dds)
 # Coeficiente 3: chikv_rec_vs_control
-resNorm <- lfcShrink(dds, coef='condition_chikv_rec_vs_control', type="normal")
 resAsh <- lfcShrink(dds, coef='condition_chikv_rec_vs_control', type="ashr")
 resLFC <- lfcShrink(dds, coef='condition_chikv_rec_vs_control', type='apeglm')
+resNorm <- lfcShrink(dds, coef='condition_chikv_rec_vs_control', type="normal")
 
-## Agora, observar os plots juntos para coef = 3
+## Agora, observar os plots juntos para coef = 
 par(mfrow=c(1,3), mar=c(4,4,4,2))
 xlim <- c(1,1e5); ylim <- c(-3,3)
+plotMA(resAsh, xlim=xlim, ylim=ylim, main="Chikungunya Rec vs Control \n(Adaptative Shrinkage Estimator)")
 plotMA(resLFC, xlim=xlim, ylim=ylim, main="Chikungunya Rec vs Control \n(LFC, apeglm)")
 plotMA(resNorm, xlim=xlim, ylim=ylim, main="Chikungunya Rec vs Control \n(Normalizados)")
-plotMA(resAsh, xlim=xlim, ylim=ylim, main="Chikungunya Rec vs Control \n(Adaptative Shrinkage Estimator)")
 
 # Coeficiente 3: chikv_rec_vs_control
 resNorm <- lfcShrink(dds, coef=3, type="normal")
 resAsh <- lfcShrink(dds, coef=3, type="ashr")
 resLFC <- lfcShrink(dds, coef=3, type='apeglm')
 
-## Agora, observar os plots juntos para coef = 3
+## Agora, observar os plots juntos para coef = 
 par(mfrow=c(1,3), mar=c(4,4,4,2))
 xlim <- c(1,1e5); ylim <- c(-3,3)
+plotMA(resAsh, xlim=xlim, ylim=ylim, main="Chikungunya Rec vs Control \n(Adaptative Shrinkage Estimator)")
 plotMA(resLFC, xlim=xlim, ylim=ylim, main="Chikungunya Rec vs Control \n(LFC, apeglm)")
 plotMA(resNorm, xlim=xlim, ylim=ylim, main="Chikungunya Rec vs Control \n(Normalizados)")
-plotMA(resAsh, xlim=xlim, ylim=ylim, main="Chikungunya Rec vs Control \n(Adaptative Shrinkage Estimator)")
 
 # Coeficiente 2: chikv_vs_control
 resNorm2 <- lfcShrink(dds, coef=2, type="normal")
@@ -553,58 +537,59 @@ resLFC2 <- lfcShrink(dds, coef=2, type='apeglm')
 # Agora, observar os plots juntos para coef = 2
 par(mfrow=c(1,3), mar=c(4,4,4,2))
 xlim <- c(1,1e5); ylim <- c(-3,3)
+plotMA(resAsh2, xlim=xlim, ylim=ylim, main="Chikungunya Doentes vs Control \n(Adaptative Shrinkage Estimator)")
 plotMA(resLFC2, xlim=xlim, ylim=ylim, main="Chikungunya Doentes vs Control \n(LFC, apeglm)")
 plotMA(resNorm2, xlim=xlim, ylim=ylim, main="Chikungunya Doentes vs Control \n(Normalizados)")
-plotMA(resAsh2, xlim=xlim, ylim=ylim, main="Chikungunya Doentes vs Control \n(Adaptative Shrinkage Estimator)")
 
 
-## Plot counts
+### Plot counts
 # É útil examinar a contagem de reads para um único gene entre os grupos (control e zika).
-# Existe a função plotCounts que pode fazer isso, a qual normaliza as contagens por profundidade
-# de sequenciamento (sequencing depth) e adiciona uma pseudocontagem de 1/2 para permitir a plotagem
-# em escala de log.
+# Existe a função plotCounts que pode fazer isso.
+# Normaliza as contagens por profundidade de sequenciamento (sequencing depth) 
+# e adiciona uma pseudocontagem de 1/2 para permitir a plotagem em escala de log.
 # Pode-se selecionar o gene de interesse a ser plotado por rowname ou por índice numérico.
+
+# Plotando por gene com menor padj
 plotCounts(dds, gene=which.min(res$padj), intgroup="condition")
 
 # Customização com ggplot2
-# Neste caso
+# Plotando por gene com menor padj
 a <- plotCounts(dds, gene=which.min(res$padj), intgroup="condition", 
                 returnData=TRUE)
 library("ggplot2")
 ggplot(a, aes(x=condition, y=count)) + 
-  geom_point(position=position_jitter(w=0.1,h=0)) + 
-  scale_y_log10(breaks=c(25,100,400))
+      geom_point(position=position_jitter(w=0.1,h=0)) + 
+      scale_y_log10(breaks=c(25,100,400))
 
 
 # Outros genes: adicionar on ID (nome):
 plotCounts(dds, gene='ENSG00000135845', intgroup="condition")
 
-# Outros genes
+# Outros genes: buscar na tabela resOrdered (ordenado por < p-value)
 b <- plotCounts(dds, gene='ENSG00000135845', intgroup="condition", returnData = T)
 library("ggplot2")
 ggplot(b, aes(x=condition, y=count)) + 
-  geom_point(position=position_jitter(w=0.1,h=0)) + 
-  scale_y_log10(breaks=c(25,100,400))
+      geom_point(position=position_jitter(w=0.1,h=0)) + 
+      scale_y_log10(breaks=c(25,100,400))
 
-# Outros genes
+
+# Outros genes: encontrar ID do gene na tabela. 
 c <- plotCounts(dds, gene='ENSG00000168300', intgroup="condition", returnData = T)
 library("ggplot2")
 ggplot(c, aes(x=condition, y=count)) + 
-  geom_point(position=position_jitter(w=0.1,h=0)) + 
-  scale_y_log10(breaks=c(25,100,400))
+      geom_point(position=position_jitter(w=0.1,h=0)) + 
+      scale_y_log10(breaks=c(25,100,400))
 
 d <- plotCounts(dds, gene='ENSG00000254708', intgroup="condition", returnData = T)
 library("ggplot2")
 ggplot(d, aes(x=condition, y=count)) + 
-  geom_point(position=position_jitter(w=0.1,h=0)) + 
-  scale_y_log10(breaks=c(25,100,400))
+      geom_point(position=position_jitter(w=0.1,h=0)) + 
+      scale_y_log10(breaks=c(25,100,400))
 
-## Mais informações na coluna Results
-mcols(res)$description
 
-# Exporting only the results which pass an adjusted p value threshold 
-# can be accomplished with the subset function, followed by the write.csv function.
-resSig <- subset(resOrdered, padj < 0.1)
+# Uma vez que se queira resultados a partir de um certo threshold
+# pode-se recorrer a um subset das contagens.
+resSig <- subset(resOrdered, padj < 0.05)
 resSig
 
 ###### Parte VI
@@ -621,8 +606,6 @@ colData(vsd)
 # RLD - Regularized log Transformation 
 rld <- rlog(dds, blind=FALSE)
 head(assay(rld), 6)
-# Os valores transformados não são contagens, sendo armazenados no slot assay.
-# colData está ligado a dds e é acessível:
 colData(rld)
 
 ## Efeitos das Transformações na Variância
@@ -630,62 +613,59 @@ colData(rld)
 # contra a média, usando shifting logarithm transformation
 # fornece log2(n + 1)
 ntd <- normTransform(dds)
-
 ## library(vsn)
 # 1. Objeto ntd
 meanSdPlot(assay(ntd))
-
 # 2. Objeto vsd
 meanSdPlot(assay(vsd))
-
 # 3. Objeto rld
 meanSdPlot(assay(rld))
 
 
 ## Qualidade de Dados por Clusterização e Visualização
 # Heatmap da matriz de contagem 
-
 #library(pheatmap)
 # 1. Select
-select <- order(rowMeans(counts(dds,normalized = TRUE)),
+select <- order(rowMeans(counts(dds, normalized = TRUE)),
                 decreasing = TRUE)[1:20]
+                
 # 2. Utilizando variável condition e replicates
-df <- as.data.frame(colData(dds)[,c("condition","replicate")])  # Todas as linhas (genes) e variáveis (colunas condition e replicate)
+df <- as.data.frame(colData(dds)[ , c("condition", "replicate")])
 # 3. Pheatmap (condição e suas replicatas)
-pheatmap(assay(ntd)[select,], cluster_rows = FALSE, show_rownames = FALSE,
+pheatmap(assay(ntd)[select, ], cluster_rows = FALSE, show_rownames = FALSE,
          cluster_cols = FALSE, annotation_col = df)
 
-
 # Utilizando variável condition e pop
-df2 <- as.data.frame(colData(dds)[,c("condition","pop")])
-pheatmap(assay(ntd)[select,], cluster_rows = FALSE, show_rownames = FALSE,
+df2 <- as.data.frame(colData(dds)[ , c("condition", "pop")])
+pheatmap(assay(ntd)[select, ], cluster_rows = FALSE, show_rownames = FALSE,
          cluster_cols = FALSE, annotation_col = df2)
-
 
 ## VST - Variance Stabilizing Transformation 
 # vsd - condition, replicate (df)
-pheatmap(assay(vsd)[select,], cluster_rows=FALSE, show_rownames=FALSE,
+pheatmap(assay(vsd)[select, ], cluster_rows=FALSE, show_rownames=FALSE,
          cluster_cols=FALSE, annotation_col=df)
 
 # vsd - condition, pop (df2)
-pheatmap(assay(vsd)[select,], cluster_rows=FALSE, show_rownames=FALSE,
+pheatmap(assay(vsd)[select, ], cluster_rows=FALSE, show_rownames=FALSE,
          cluster_cols=FALSE, annotation_col=df2)
 
 ## RLD - Regularized log Transformation 
 # rld - condition, replicate (df)
-pheatmap(assay(rld)[select,], cluster_rows=FALSE, show_rownames=FALSE,
+pheatmap(assay(rld)[select, ], cluster_rows=FALSE, show_rownames=FALSE,
          cluster_cols=FALSE, annotation_col=df)
 
 # rld - condition, pop (df2)
-pheatmap(assay(rld)[select,], cluster_rows=FALSE, show_rownames=FALSE,
+pheatmap(assay(rld)[select, ], cluster_rows=FALSE, show_rownames=FALSE,
          cluster_cols=FALSE, annotation_col=df2)
+
 
 
 ### Heatmap das Distâncias Amostra-Amostra
 # O utro uso de dados transformados: sample clustering.
 # Usando a função dist para transposição de matriz de contagem transformada.
-sampleDists <- dist(t(assay(vsd)))
 
+# vsd
+sampleDists <- dist(t(assay(vsd)))
 # library(RColorBrewer)
 sampleDistMatrix <- as.matrix(sampleDists)
 rownames(sampleDistMatrix) <- paste(vsd$condition, vsd$run, sep=" - ")
@@ -696,67 +676,65 @@ pheatmap(sampleDistMatrix,
          clustering_distance_cols=sampleDists,
          col=colors)
 
+# rld
+sampleDistsRLD <- dist(t(assay(rld)))
+sampleDistMatrixRLD <- as.matrix(sampleDistsRLD)
+rownames(sampleDistMatrixRLD) <- paste(vsd$condition, vsd$run, sep=" - ")
+colnames(sampleDistMatrixRLD) <- NULL
+colors <- colorRampPalette( rev(brewer.pal(9, "Reds")) )(255)
+pheatmap(sampleDistMatrixRLD,
+         clustering_distance_rows=sampleDistsRLD,
+         clustering_distance_cols=sampleDistsRLD,
+         col=colors)
 
 ### PCA - Principal component plot das amostras
 # O plot PCA está relacionado à matriz de distância e evidencia as amostras no plano de 2D
 # abrangidas por seus primeiros componentes principais.
 # Esse gráfico é útil para visualizar o efeito geral de covariantes experimentais (e batch effects).
 
-## Usando VST
-# vsd object
-plotPCA(vsd, intgroup=c("condition", "run"))
-
+## Usando vsd
 # vsd object
 plotPCA(vsd, intgroup=c("condition", "replicate"))
 
-## Usando RLT
 # rld object
-plotPCA(rld, intgroup=c("condition", "run"))
-
-# rld
 plotPCA(rld, intgroup=c("condition", "replicate"))
 
+# Observar a PCA parâmetro TRUE
 plotPCA(rld, 
         intgroup=c("condition", "replicate"),
         returnData = TRUE)
 
 
-# Outra forma: res <-
+
+# PCA sob argumento ntop vsd
 pcaVSD <- plotPCA(vsd, 
                   ntop = nrow(counts(dds)),
                   returnData=FALSE)
+]# Visualizar
+pcaVSD
 
+# PCA sob argumentos ntop e intgroup 
 pcaVSD2 <- plotPCA(rld, 
                    ntop = nrow(counts(dds)),
                    intgroup=c("condition", "replicate"),
                    returnData=FALSE)
-
-pcaVSD
+# Visualizar
 pcaVSD2
 
+# PCA sob argumento ntop rld
 pcaRLD <- plotPCA(rld, 
-               ntop = nrow(counts(dds)),
-               returnData=FALSE)
-
-pcaRLD2 <- plotPCA(rld, 
                   ntop = nrow(counts(dds)),
-                  intgroup=c("condition", "replicate"),
                   returnData=FALSE)
-
 pcaRLD
+pcaRLD2 <- plotPCA(rld, 
+                   ntop = nrow(counts(dds)),
+                   intgroup=c("condition", "replicate"),
+                   returnData=FALSE)
 pcaRLD2
 
-# PCA sob TRUE
-plotPCA(rld, 
-        ntop = nrow(counts(dds)),
-        intgroup=c("condition", "replicate"),
-        returnData=TRUE)
 
-
-
-## Utilizando ggplot2 com os dados
-## ggplot2
-# rsd object
+### Utilizando ggplot2 com os dados
+# vsd object
 pcaData <- plotPCA(vsd, intgroup=c("condition", "replicate"), returnData = TRUE)
 percentVar <- round(100 * attr(pcaData, "percentVar"))
 ggplot(pcaData, aes(PC1, PC2, color=condition, shape=replicate)) +
@@ -765,7 +743,7 @@ ggplot(pcaData, aes(PC1, PC2, color=condition, shape=replicate)) +
   ylab(paste0("PC2: ",percentVar[2],"% variance")) + 
   coord_fixed()
 
-# Outra forma , de acordo com pcaRLD, pcaVSD:
+# Outra forma , de acordo com pcaRLD e pcaVSD:
 pcaData <- plotPCA(vsd,  ntop = nrow(counts(dds)), intgroup=c("condition", "replicate"), returnData = TRUE)
 percentVar <- round(100 * attr(pcaData, "percentVar"))
 ggplot(pcaData, aes(PC1, PC2, color=condition, shape=replicate)) +
@@ -773,6 +751,7 @@ ggplot(pcaData, aes(PC1, PC2, color=condition, shape=replicate)) +
   xlab(paste0("PC1: ",percentVar[1],"% variance")) +
   ylab(paste0("PC2: ",percentVar[2],"% variance")) + 
   coord_fixed()
+
 
 
 ############ Extrair os resultados da análise de DE para .CSV ############
