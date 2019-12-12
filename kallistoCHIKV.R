@@ -13,17 +13,15 @@ library(readr)
 library(dplyr)
 library(rhdf5)
 library(IHW)
-library(GenomicAlignments)
 library(vsn)
 library(pheatmap)
 library(RColorBrewer)
 library(PoiClaClu)
 library(genefilter)
-library(AnnotationDbi)
-library(org.Hs.eg.db)
-library(ReportingTools)
-library(Glimma)
-library(pcaExplorer)
+
+setwd("/data4/waraujo")
+list.files('./')
+
 
 ## Parte 1 - Preparação de dados das amostras de kallisto.
 # Caminho dos arquivos (fele path)
