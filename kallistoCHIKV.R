@@ -1,9 +1,9 @@
 ##---------------------------------------------
 # Análise em Nível de Transcrito Kallisto
-# Utilizando Triplicatas
+# Utilizando Octuplicatas
 # Wald test p-value: condition chikv vs control
 # Wald test p-value: condition chikv_rec vs control 
-# Data: 09/12/2019
+# Data: 11/12/2019
 ##---------------------------------------------
 library(tximport)
 library(apeglm)
