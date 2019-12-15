@@ -424,7 +424,7 @@ design(dds)
 
 ###--------- Análise de Expressão Diferencial (DE) ---------###
 # Objeto dds por DESeq2
-# MOdelando as contagens com efeitos de condition vs control
+# Modelando as contagens com efeitos de condition vs control
 dds <- DESeq(dds)
 
 # A função results gera tabelas de resultados.
@@ -440,17 +440,27 @@ res
 # Summary
 summary(res)
 
-# Informações de metadados do objeto res:
+# Informações de metadados do objeto res: colunas.
 mcols(res, use.names=TRUE)
 
 # Examinando as contagens e contagens normalizadas para os genes com menor p-value:
 idx <- which.min(res$pvalue)
 counts(dds)[idx, ]
 
+#Normalization
+counts(dds, normalized=TRUE)[ idx, ]
+
 # Outras comparações:
+# Usar argumento 'contrast = ' na função results(); 
+# Especificar 3 valores como parâmetros: o nome da variável (coluna $condition); level numerador (gbs); level denominador (control).
 res2gbs <- results(dds, contrast = c("condition", "gbs", "control"))
 res2gbs_rec <- results(dds, contrast = c("condition", "gbs_rec", "control"))
 res2gbsall <- results(dds, contrast = c("condition", "gbs_rec", "gbs"))
+
+res
+res2gbs
+res2gbs_rec
+res2gbsall
 
 ## Criar csv (pode ser usado em fgsea)
 # Salvar .csv Wald test p-value: condition chikv rec vs control fgsea
