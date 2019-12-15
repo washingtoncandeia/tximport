@@ -415,20 +415,16 @@ dds <- dds.txi[keep,]
 # Outra forma:
 #dds <- dds.txi[rowSums(counts(dds.txi)) >= 10, ]
 
-# Observar
-head(dds$condition)
-
-# Relevel factor para control como referencia
-#reference <- 'control'
 head(dds$condition, 9)
-# Relevel como exemplo:
-#dds$condition <- relevel(dds$condition, ref = "control")
 
 # Observar o design
 design(dds)
 
-### Análise de Expressão Diferencial (DE)
+
+
+###--------- Análise de Expressão Diferencial (DE) ---------###
 # Objeto dds por DESeq2
+# MOdelando as contagens com efeitos de condition vs control
 dds <- DESeq(dds)
 
 # A função results gera tabelas de resultados.
@@ -451,9 +447,14 @@ mcols(res, use.names=TRUE)
 idx <- which.min(res$pvalue)
 counts(dds)[idx, ]
 
+# Outras comparações:
+res2gbs <- results(dds, contrast = c("condition", "gbs", "control"))
+res2gbs_rec <- results(dds, contrast = c("condition", "gbs_rec", "control"))
+res2gbsall <- results(dds, contrast = c("condition", "gbs_rec", "gbs"))
+
 ## Criar csv (pode ser usado em fgsea)
 # Salvar .csv Wald test p-value: condition chikv rec vs control fgsea
-write.csv(as.data.frame(res), file = './GSEA/gbs/condition_zika_gbs_gbs_rec_vs_control.csv')
+write.csv(as.data.frame(res), file = './GSEA/gbs/condition_gbs_vs_control.csv')
 
 ## Log fold change shrinkage for visualization and ranking
 # Contração log fod change para visualização e ranqueamento.
@@ -470,7 +471,7 @@ resultsNames(dds)
 # associado com mudanças log2 fold changes advindas de baixas contagens de genes
 # sem requerimento de thresholds de filtragem arbitrários.
 # Para contrair (shrink) LFC passar objeto dds para função lfcShrink:
-resLFC <- lfcShrink(dds, coef = 'condition_zika_vs_control', type = 'apeglm')  # coef = 3
+resLFC <- lfcShrink(dds, coef = 'condition_gbs_vs_control', type = 'apeglm')  # coef = 3
 
 # Observar
 resLFC
