@@ -391,16 +391,29 @@ dds.txi <- DESeqDataSetFromTximport(txi = txi.kallisto,
 dds.txi$condition <- relevel(dds.txi$condition, ref = 'control')
 str(dds.txi$condition)
 
+# Observar as amostras:
+as.data.frame(colData(dds.txi))
+# ou:
+head(dds.txi$condition)
 # Agora, o objeto dds.Txi pode ser usado como aquele dds nos
 # passos subsequentes de DESeq2.
 head(dds.txi$condition)
 
+# Se uma das condições for retirada da análise ($condition), 
+# é preciso fazer um drop level dos fatores restantes.
+#dds.txi$condition <- droplevels( dds.txi$condition)
+
 ## Pre-filtering
 # Filtrar por counts insignificantes.
+# Remover genes sem contagens significantes para as amostras. Neste caso, no mínimo 10 contagens.
 keep <- rowSums(counts(dds.txi)) >= 10
+
 
 # Renomear dds.txi para dds:
 dds <- dds.txi[keep,]
+
+# Outra forma:
+#dds <- dds.txi[rowSums(counts(dds.txi)) >= 10, ]
 
 # Observar
 head(dds$condition)
@@ -411,6 +424,8 @@ head(dds$condition, 9)
 # Relevel como exemplo:
 #dds$condition <- relevel(dds$condition, ref = "control")
 
+# Observar o design
+design(dds)
 
 ### Análise de Expressão Diferencial (DE)
 # Objeto dds por DESeq2
@@ -428,6 +443,13 @@ res <- results(dds)
 res
 # Summary
 summary(res)
+
+# Informações de metadados do objeto res:
+mcols(res, use.names=TRUE)
+
+# Examinando as contagens e contagens normalizadas para os genes com menor p-value:
+idx <- which.min(res$pvalue)
+counts(dds)[idx, ]
 
 ## Criar csv (pode ser usado em fgsea)
 # Salvar .csv Wald test p-value: condition chikv rec vs control fgsea
