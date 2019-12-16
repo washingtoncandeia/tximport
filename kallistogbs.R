@@ -3,7 +3,7 @@
 # Utilizando Octuplicatas
 # Wald test p-value: condition gbs vs control
 # Wald test p-value: condition gbs_rec vs control 
-# Data: 12/12/2019
+# Data: 15/12/2019
 ##---------------------------------------------
 library(tximport)
 library(apeglm)
@@ -499,7 +499,7 @@ DEGscontrGBSvsCONTROL <- subset(contrGBSvsCONTROL, padj <= 0.05 & abs(log2FoldCh
 
 
 #Volcanoplot
-with(as.data.frame(contr_RECzika[!(-log10(contrGBSvsCONTROL$padj) == 0), ]), plot(log2FoldChange,-log10(padj), pch=16, axes=T,
+with(as.data.frame(contrGBSvsCONTROL[!(-log10(contrGBSvsCONTROL$padj) == 0), ]), plot(log2FoldChange,-log10(padj), pch=16, axes=T,
                                         xlim = c(-6,6), ylim = c(0,4),                                    
                                         xlab = NA, ylab = "-Log10(Pvalue-Adjusted)", main = "Guillain-Barré vs Grupo Controle"
                                                                             
