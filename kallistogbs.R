@@ -440,6 +440,9 @@ res
 # Summary
 summary(res)
 
+# Salvar .csv Wald test p-value: condition chikv rec vs control em .csv para fgsea
+write.csv(as.data.frame(res), file = './GSEA/gbs/condition_gbs_vs_control.csv')
+
 # Informações de metadados do objeto res: colunas.
 mcols(res, use.names=TRUE)
 
@@ -453,7 +456,8 @@ counts(dds, normalized=TRUE)[ idx, ]
 # Outras comparações:
 # Usar argumento 'contrast = ' na função results(); 
 # Especificar 3 valores como parâmetros: o nome da variável (coluna $condition); level numerador (gbs); level denominador (control).
-res2gbs <- results(dds, contrast = c("condition", "gbs", "control"))
+# Cada objeto abaixo é um objeto "res" modificado para a análise que interessar:
+res2gbs <- results(dds, contrast = c("condition", "gbs", "control")) # == res
 res2gbs_rec <- results(dds, contrast = c("condition", "gbs_rec", "control"))
 res2gbsall <- results(dds, contrast = c("condition", "gbs_rec", "gbs"))
 
@@ -465,7 +469,7 @@ res2gbsall
 ####------------------- Criar .CSV (pode ser usado em fgsea) -------------------####
 # Salvar .csv Wald test p-value: condition chikv rec vs control em .csv para fgsea
 write.csv(as.data.frame(res), file = './GSEA/gbs/condition_gbs_vs_control.csv')
-
+write.csv(as.data.frame(res2gbs), file = './GSEA/gbs/condition_gbs_vs_control.csv')
 # Formas alternativas de arquivos .csv para fgsea:
 contrGBSvsCONTROL <- as.data.frame(res2gbs)
 write.csv(contrGBSvsCONTROL, file = './GSEA/gbs/condition_gbs_vs_control.csv')
@@ -474,16 +478,21 @@ write.csv(contrGBSvsCONTROL, file = './GSEA/gbs/condition_gbs_vs_control.csv')
 contrGBSrecvsCONTROL <- as.data.frame(results(dds, contrast=c('condition','gbs_rec','control')))
 write.csv(contrGBSrecvsCONTROL, file = './GSEA/gbs/condition_gbs_Rec_vs_control.csv')
 
-####------------------------------------------------------------------------------####
+# Ou:
+res2gbs_rec <- results(dds, contrast = c("condition", "gbs_rec", "control"))
+write.csv(as.data.frame(res2gbs_rec), file = './GSEA/gbs/condition_gbs_Rec_vs_control.csv')
+
 
 ### Análise Alternativa de Genes DE com cutoff pdaj <= 0.05 para genes DE ###
-# Observe que isto é uma forma alternativa se o cutoff não for feito em:
+# Observe que isto é uma forma alternativa se o cutoff não tiver sido feito em:
 # res <- results(dds, alpha=0.05)
 # https://github.com/washingtoncandeia/DESeq_IMT/blob/master/codes_DESeq2/1_GBSrecuperadosVsZika.R
-# 16. Criar uma nova coluna com os nomes (SYMBOLS) dos genes.
+
+
+# Criar uma nova coluna com os nomes (SYMBOLS) dos genes.
 contrGBSvsCONTROL$genes <- rownames(contrGBSvsCONTROL)
 
-# 17. Remoção de NAs na coluna de padj.
+# Remoção de NAs na coluna de padj.
 contrGBSvsCONTROL$padj[is.na(contrGBSvsCONTROL$padj)] <- 1
 
 DEGscontrGBSvsCONTROL <- subset(contrGBSvsCONTROL, padj <= 0.05 & abs(log2FoldChange) > 1)
@@ -505,8 +514,7 @@ abline(v=-1,col="green", lty = 2, cex= 3)
 
 ####------------------------------------------------------------------------------####
 
-
-
+## Continuação:
 ## Log fold change shrinkage for visualization and ranking
 # Contração log fod change para visualização e ranqueamento.
 # Shrinkage of effect size (LFC estimates)
@@ -529,7 +537,7 @@ resLFC
 # Summary
 summary(resLFC)
 
-# FDR cutoff, alpha.
+# FDR cutoff, alpha = 0.05.
 res05 <- results(dds, alpha=0.05)
 summary(res05)
 
