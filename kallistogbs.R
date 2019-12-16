@@ -462,9 +462,50 @@ res2gbs
 res2gbs_rec
 res2gbsall
 
-## Criar csv (pode ser usado em fgsea)
-# Salvar .csv Wald test p-value: condition chikv rec vs control fgsea
+####------------------- Criar .CSV (pode ser usado em fgsea) -------------------####
+# Salvar .csv Wald test p-value: condition chikv rec vs control em .csv para fgsea
 write.csv(as.data.frame(res), file = './GSEA/gbs/condition_gbs_vs_control.csv')
+
+# Formas alternativas de arquivos .csv para fgsea:
+contrGBSvsCONTROL <- as.data.frame(res2gbs)
+write.csv(contrGBSvsCONTROL, file = './GSEA/gbs/condition_gbs_vs_control.csv')
+
+# Outra forma .csv para fgsea:
+contrGBSrecvsCONTROL <- as.data.frame(results(dds, contrast=c('condition','gbs_rec','control')))
+write.csv(contrGBSrecvsCONTROL, file = './GSEA/gbs/condition_gbs_Rec_vs_control.csv')
+
+####------------------------------------------------------------------------------####
+
+### Análise Alternativa de Genes DE com cutoff pdaj <= 0.05 para genes DE ###
+# Observe que isto é uma forma alternativa se o cutoff não for feito em:
+# res <- results(dds, alpha=0.05)
+# https://github.com/washingtoncandeia/DESeq_IMT/blob/master/codes_DESeq2/1_GBSrecuperadosVsZika.R
+# 16. Criar uma nova coluna com os nomes (SYMBOLS) dos genes.
+contrGBSvsCONTROL$genes <- rownames(contrGBSvsCONTROL)
+
+# 17. Remoção de NAs na coluna de padj.
+contrGBSvsCONTROL$padj[is.na(contrGBSvsCONTROL$padj)] <- 1
+
+DEGscontrGBSvsCONTROL <- subset(contrGBSvsCONTROL, padj <= 0.05 & abs(log2FoldChange) > 1)
+
+
+#Volcanoplot
+with(as.data.frame(contr_RECzika[!(-log10(contrGBSvsCONTROL$padj) == 0), ]), plot(log2FoldChange,-log10(padj), pch=16, axes=T,
+                                        xlim = c(-6,6), ylim = c(0,4),                                    
+                                        xlab = NA, ylab = "-Log10(Pvalue-Adjusted)", main = "Guillain-Barré vs Grupo Controle"
+                                                                            
+)
+)
+
+with(subset(subset(as.data.frame(contr_RECzika), padj <= 0.05), log2FoldChange <= -1), points(log2FoldChange,-log10(padj), pch=21, col="black",bg = "#69B1B7"))
+with(subset(subset(as.data.frame(contr_RECzika), padj <= 0.05), log2FoldChange >= 1), points(log2FoldChange,-log10(padj),pch=21, col="black",bg = "tomato3"))
+abline(h=1.3,col="green", lty = 2, cex= 3)
+abline(v=1,col="green", lty = 2, cex= 3)
+abline(v=-1,col="green", lty = 2, cex= 3)
+
+####------------------------------------------------------------------------------####
+
+
 
 ## Log fold change shrinkage for visualization and ranking
 # Contração log fod change para visualização e ranqueamento.
