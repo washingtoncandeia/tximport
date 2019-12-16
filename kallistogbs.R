@@ -440,7 +440,7 @@ res
 # Summary
 summary(res)
 
-# Salvar .csv Wald test p-value: condition chikv rec vs control em .csv para fgsea
+# Salvar .csv Wald test p-value: condition gbs/gbs_rec vs control em .csv para fgsea
 write.csv(as.data.frame(res), file = './GSEA/gbs/condition_gbs_vs_control.csv')
 
 # Informações de metadados do objeto res: colunas.
@@ -467,14 +467,16 @@ res2gbs_rec
 res2gbsall
 
 ####------------------- Criar .CSV (pode ser usado em fgsea) -------------------####
-# Salvar .csv Wald test p-value: condition chikv rec vs control em .csv para fgsea
+# Salvar .csv Wald test p-value: condition gbs/gbs_rec vs control em .csv para fgsea
+# Abaixo .csv já criado na linha 444 deste código:
 write.csv(as.data.frame(res), file = './GSEA/gbs/condition_gbs_vs_control.csv')
 write.csv(as.data.frame(res2gbs), file = './GSEA/gbs/condition_gbs_vs_control.csv')
-# Formas alternativas de arquivos .csv para fgsea:
 contrGBSvsCONTROL <- as.data.frame(res2gbs)
 write.csv(contrGBSvsCONTROL, file = './GSEA/gbs/condition_gbs_vs_control.csv')
 
-# Outra forma .csv para fgsea:
+
+# Formas alternativas de arquivos .csv para fgsea:
+# Outra forma .csv para fgsea (gbs rec):
 contrGBSrecvsCONTROL <- as.data.frame(results(dds, contrast=c('condition','gbs_rec','control')))
 write.csv(contrGBSrecvsCONTROL, file = './GSEA/gbs/condition_gbs_Rec_vs_control.csv')
 
