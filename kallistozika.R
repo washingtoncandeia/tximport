@@ -825,25 +825,25 @@ plotPCA(rld,
 
 
 
-## Utilizando ggplot2 com os dados
-## ggplot2
-# rsd object
-pcaData <- plotPCA(vsd, intgroup=c("condition", "replicate"), returnData = TRUE)
-percentVar <- round(100 * attr(pcaData, "percentVar"))
-ggplot(pcaData, aes(PC1, PC2, color=condition, shape=replicate)) +
-  geom_point(size=3) +
-  xlab(paste0("PC1: ",percentVar[1],"% variance")) +
-  ylab(paste0("PC2: ",percentVar[2],"% variance")) + 
-  coord_fixed()
 
-# Outra forma , de acordo com pcaRLD, pcaVSD:
-pcaData <- plotPCA(vsd,  ntop = nrow(counts(dds)), intgroup=c("condition", "replicate"), returnData = TRUE)
-percentVar <- round(100 * attr(pcaData, "percentVar"))
-ggplot(pcaData, aes(PC1, PC2, color=condition, shape=replicate)) +
-  geom_point(size=3) +
-  xlab(paste0("PC1: ",percentVar[1],"% variance")) +
-  ylab(paste0("PC2: ",percentVar[2],"% variance")) + 
-  coord_fixed()
+####------------------- Criar .CSV (pode ser usado em fgsea) -------------------####
+# Salvar .csv Wald test p-value: condition gbs/gbs_rec vs control em .csv para fgsea
+# Abaixo .csv já criado na linha 444 deste código:
+write.csv(as.data.frame(res), file = './GSEA/gbs/condition_gbs_vs_control.csv')
+write.csv(as.data.frame(res2gbs), file = './GSEA/gbs/condition_gbs_vs_control.csv')
+
+contrGBSvsCONTROL <- as.data.frame(res2gbs)
+write.csv(contrGBSvsCONTROL, file = './GSEA/gbs/condition_gbs_vs_control.csv')
+
+
+# Formas alternativas de arquivos .csv para fgsea:
+# Outra forma .csv para fgsea (gbs rec):
+contrGBSrecvsCONTROL <- as.data.frame(results(dds, contrast=c('condition','gbs_rec','control')))
+write.csv(contrGBSrecvsCONTROL, file = './GSEA/gbs/condition_gbs_Rec_vs_control.csv')
+
+# Ou:
+res2gbs_rec <- results(dds, contrast = c("condition", "gbs_rec", "control"))
+write.csv(as.data.frame(res2gbs_rec), file = './GSEA/gbs/condition_gbs_Rec_vs_control.csv')
 
 
 ### Análise Alternativa de Genes DE com cutoff pdaj <= 0.05 para genes DE ###
@@ -863,9 +863,9 @@ DEGscontrGBSvsCONTROL <- subset(contrGBSvsCONTROL, padj <= 0.05 & abs(log2FoldCh
 
 #Volcanoplot
 with(as.data.frame(contrGBSvsCONTROL[!(-log10(contrGBSvsCONTROL$padj) == 0), ]), plot(log2FoldChange,-log10(padj), pch=16, axes=T,
-                                                                                      xlim = c(-6,6), ylim = c(0,4),                                    
-                                                                                      xlab = NA, ylab = "-Log10(Pvalue-Adjusted)", main = "Guillain-Barré vs Grupo Controle"
-                                                                                      
+                                        xlim = c(-6,6), ylim = c(0,4),                                    
+                                        xlab = NA, ylab = "-Log10(Pvalue-Adjusted)", main = "Guillain-Barré vs Grupo Controle"
+                                                                            
 )
 )
 
