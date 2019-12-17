@@ -1,8 +1,8 @@
 ##---------------------------------------------
 # Análise em Nível de Transcrito Kallisto
 # Utilizando Octuplicatas
-# Wald test p-value: condition gbs vs control
-# Wald test p-value: condition gbs_rec vs control 
+# Wald test p-value: condition Guillain-Barré vs control
+# Wald test p-value: condition Guillain-Barré_rec vs control 
 # Data: 15/12/2019
 ##---------------------------------------------
 library(tximport)
@@ -31,51 +31,51 @@ list.files(dir)
 ZIKA <- 'ZIKA'
 CHIKV <- 'CHIKV'
 CHIKV_REC <- 'CHIKV_REC'
-GBS <- 'GBS'
-GBS_REC <- 'GBS_REC'
+Guillain-Barré <- 'Guillain-Barré'
+Guillain-Barré_REC <- 'Guillain-Barré_REC'
 CONTROL <- 'CONTROL'
 
 
 # Vetor com nomes populações para fazer coluna pop:
 # Obs.: Ao fazer o vetor, melhor deixar organizado combinando amostra + nomearquivo
 # Coluna 1
-pop <- c(rep(GBS, 8),      # GBS        1
+pop <- c(rep(Guillain-Barré, 8),      # Guillain-Barré        1
          rep(CONTROL, 8),  # Control   10
          rep(CONTROL, 8),  # Control   11
          rep(ZIKA, 8),     # Zika      12
-         rep(GBS, 8),      # GBS       13
-         rep(GBS, 8),      # GBS       14
-         rep(GBS_REC, 8),  # GBSrec    16 
+         rep(Guillain-Barré, 8),      # Guillain-Barré       13
+         rep(Guillain-Barré, 8),      # Guillain-Barré       14
+         rep(Guillain-Barré_REC, 8),  # Guillain-Barrérec    16 
          rep(CHIKV_REC, 8),# Chikv rec 18
          rep(CONTROL, 8),  # Control   19
-         rep(GBS, 8),      # GBS        2
+         rep(Guillain-Barré, 8),      # Guillain-Barré        2
          rep(CONTROL, 8),  # Control   20
          rep(CHIKV, 8),    # Chikv     22
          rep(ZIKA, 8),     # Zika      24
-         rep(GBS, 8),      # GBS       25
-         rep(GBS_REC, 8),  # GBSrec    27
-         rep(GBS_REC, 8),  # GBSrec    28
-         rep(GBS_REC, 8),  # GBSrec    30
+         rep(Guillain-Barré, 8),      # Guillain-Barré       25
+         rep(Guillain-Barré_REC, 8),  # Guillain-Barrérec    27
+         rep(Guillain-Barré_REC, 8),  # Guillain-Barrérec    28
+         rep(Guillain-Barré_REC, 8),  # Guillain-Barrérec    30
          rep(CHIKV, 8),    # Chikv     31
          rep(CHIKV, 8),    # Chikv     32
          rep(CONTROL, 8),  # Control   33  
          rep(CONTROL, 8),  # Control   34
          rep(CHIKV_REC, 8),# Chikv rec 35
          rep(ZIKA, 8),     # Zika      36
-         rep(GBS_REC, 8),  # GBSrec    38
-         rep(GBS_REC, 8),  # GBSrec    39
-         rep(GBS, 8),      # GBS        4
+         rep(Guillain-Barré_REC, 8),  # Guillain-Barrérec    38
+         rep(Guillain-Barré_REC, 8),  # Guillain-Barrérec    39
+         rep(Guillain-Barré, 8),      # Guillain-Barré        4
          rep(CHIKV, 8),    # Chikv     40
          rep(CHIKV_REC, 8),# Chikv rec 41
          rep(CHIKV_REC, 8),# Chikv rec 42
          rep(CHIKV_REC, 8),# Chikv rec 46
          rep(CHIKV_REC, 8),# Chikv rec 47
          rep(ZIKA, 8),     # Zika      48
-         rep(GBS_REC, 8),  # GBSrec     7
-         rep(GBS_REC, 8),  # GBSrec     8
-         rep(GBS_REC, 8))  # GBSrec     9
+         rep(Guillain-Barré_REC, 8),  # Guillain-Barrérec     7
+         rep(Guillain-Barré_REC, 8),  # Guillain-Barrérec     8
+         rep(Guillain-Barré_REC, 8))  # Guillain-Barrérec     9
 
-head(pop, 12)    # ZIKA, CHIKV, CHIKV_REC, GBS, GBS_REC, CONTROL
+head(pop, 12)    # ZIKA, CHIKV, CHIKV_REC, Guillain-Barré, Guillain-Barré_REC, CONTROL
 length(pop)      # 280
 
 
@@ -94,164 +94,164 @@ length(run)      # 280
 
 
 # Coluna 4
-condition <- c(rep('gbs', 8),       # GBS        1
+condition <- c(rep('Guillain-Barré', 8),       # Guillain-Barré        1
                rep('control', 8),   # Control   10
                rep('control', 8),   # Control   11
                rep('zika', 8),      # Zika      12
-               rep('gbs', 8),       # GBS       13
-               rep('gbs', 8),       # GBS       14
-               rep('gbs_rec', 8),   # GBSrec    16 
+               rep('Guillain-Barré', 8),       # Guillain-Barré       13
+               rep('Guillain-Barré', 8),       # Guillain-Barré       14
+               rep('Guillain-Barré_rec', 8),   # Guillain-Barrérec    16 
                rep('chikv_rec', 8), # Chikv rec 18
                rep('control', 8),   # Control   19
-               rep('gbs', 8),       # GBS        2
+               rep('Guillain-Barré', 8),       # Guillain-Barré        2
                rep('control', 8),   # Control   20
                rep('chikv', 8),     # Chikv     22
                rep('zika', 8),      # Zika      24
-               rep('gbs', 8),       # GBS       25
-               rep('gbs_rec', 8),   # GBSrec    27
-               rep('gbs_rec', 8),   # GBSrec    28
-               rep('gbs_rec', 8),   # GBSrec    30
+               rep('Guillain-Barré', 8),       # Guillain-Barré       25
+               rep('Guillain-Barré_rec', 8),   # Guillain-Barrérec    27
+               rep('Guillain-Barré_rec', 8),   # Guillain-Barrérec    28
+               rep('Guillain-Barré_rec', 8),   # Guillain-Barrérec    30
                rep('chikv', 8),     # Chikv     31
                rep('chikv', 8),     # Chikv     32
                rep('control', 8),   # Control   33  
                rep('control', 8),   # Control   34
                rep('chikv_rec', 8), # Chikv rec 35
                rep('zika', 8),      # Zika      36
-               rep('gbs_rec', 8),   # GBSrec    38
-               rep('gbs_rec', 8),   # GBSrec    39
-               rep('gbs', 8),       # GBS        4
+               rep('Guillain-Barré_rec', 8),   # Guillain-Barrérec    38
+               rep('Guillain-Barré_rec', 8),   # Guillain-Barrérec    39
+               rep('Guillain-Barré', 8),       # Guillain-Barré        4
                rep('chikv', 8),     # Chikv     40
                rep('chikv_rec', 8), # Chikv rec 41
                rep('chikv_rec', 8), # Chikv rec 42
                rep('chikv_rec', 8), # Chikv rec 46
                rep('chikv_rec', 8), # Chikv rec 47
                rep('zika', 8),      # Zika      48
-               rep('gbs_rec', 8),   # GBSrec     7
-               rep('gbs_rec', 8),   # GBSrec     8
-               rep('gbs_rec', 8))   # GBSrec     9
+               rep('Guillain-Barré_rec', 8),   # Guillain-Barrérec     7
+               rep('Guillain-Barré_rec', 8),   # Guillain-Barrérec     8
+               rep('Guillain-Barré_rec', 8))   # Guillain-Barrérec     9
 
 length(condition)
 
 
 # Coluna 5
 # Pares
-pares <- c(rep('não', 8),  # GBS        1
+pares <- c(rep('não', 8),  # Guillain-Barré        1
            rep('não', 8),  # Control   10
            rep('não', 8),  # Control   11
            rep('não', 8),  # Zika      12
-           rep('não', 8),  # GBS       13
-           rep('não', 8),  # GBS       14
-           rep('par', 8),  # GBSrec    16 
+           rep('não', 8),  # Guillain-Barré       13
+           rep('não', 8),  # Guillain-Barré       14
+           rep('par', 8),  # Guillain-Barrérec    16 
            rep('não', 8),  # Chikv rec 18
            rep('não', 8),  # Control   19
-           rep('não', 8),  # GBS        2
+           rep('não', 8),  # Guillain-Barré        2
            rep('não', 8),  # Control   20
            rep('não', 8),  # Chikv     22
            rep('não', 8),  # Zika      24
-           rep('não', 8),  # GBS       25
-           rep('não', 8),  # GBSrec    27
-           rep('não', 8),  # GBSrec    28
-           rep('par', 8),  # GBSrec    30
+           rep('não', 8),  # Guillain-Barré       25
+           rep('não', 8),  # Guillain-Barrérec    27
+           rep('não', 8),  # Guillain-Barrérec    28
+           rep('par', 8),  # Guillain-Barrérec    30
            rep('não', 8),  # Chikv     31
            rep('não', 8),  # Chikv     32
            rep('não', 8),  # Control   33  
            rep('não', 8),  # Control   34
            rep('não', 8),  # Chikv rec 35
            rep('não', 8),  # Zika      36
-           rep('não', 8),  # GBSrec    38
-           rep('não', 8),  # GBSrec    39
-           rep('não', 8),  # GBS        4
+           rep('não', 8),  # Guillain-Barrérec    38
+           rep('não', 8),  # Guillain-Barrérec    39
+           rep('não', 8),  # Guillain-Barré        4
            rep('não', 8),  # Chikv     40
            rep('não', 8),  # Chikv rec 41
            rep('não', 8),  # Chikv rec 42
            rep('não', 8),  # Chikv rec 46
            rep('não', 8),  # Chikv rec 47
            rep('não', 8),  # Zika      48
-           rep('par', 8),  # GBSrec     7
-           rep('não', 8),  # GBSrec     8
-           rep('par', 8))  # GBSrec     9
+           rep('par', 8),  # Guillain-Barrérec     7
+           rep('não', 8),  # Guillain-Barrérec     8
+           rep('par', 8))  # Guillain-Barrérec     9
 
 length(pares)
 
 # Coluna 6
-# Tipo GBS: desmielinizante x não desmielinizante
+# Tipo Guillain-Barré: desmielinizante x não desmielinizante
 # Pares de condições
-diagn <- c(rep('Desmielin', 8),   # GBS        1
+diagn <- c(rep('Desmielin', 8),   # Guillain-Barré        1
            rep('não', 8),         # Control   10
            rep('não', 8),         # Control   11
            rep('não', 8),         # Zika      12
-           rep('Desmielin', 8),   # GBS       13
-           rep('Desmielin', 8),   # GBS       14
-           rep('Desmielin', 8),   # GBSrec    16 
+           rep('Desmielin', 8),   # Guillain-Barré       13
+           rep('Desmielin', 8),   # Guillain-Barré       14
+           rep('Desmielin', 8),   # Guillain-Barrérec    16 
            rep('não', 8),         # Chikv rec 18
            rep('não', 8),         # Control   19
-           rep('Desmielin', 8),   # GBS        2
+           rep('Desmielin', 8),   # Guillain-Barré        2
            rep('não', 8),         # Control   20
            rep('não', 8),         # Chikv     22
            rep('não', 8),         # Zika      24
-           rep('Desmielin', 8),   # GBS       25
-           rep('Desmielin', 8),   # GBSrec    27
-           rep('Desmielin', 8),   # GBSrec    28
-           rep('Inconclus', 8),   # GBSrec    80
+           rep('Desmielin', 8),   # Guillain-Barré       25
+           rep('Desmielin', 8),   # Guillain-Barrérec    27
+           rep('Desmielin', 8),   # Guillain-Barrérec    28
+           rep('Inconclus', 8),   # Guillain-Barrérec    80
            rep('não', 8),         # Chikv     31
            rep('não', 8),         # Chikv     32
            rep('não', 8),         # Control   33  
            rep('não', 8),         # Control   34
            rep('não', 8),         # Chikv rec 35
            rep('não', 8),         # Zika      36
-           rep('Desmielin', 8),   # GBSrec    38
-           rep('Axonal', 8),      # GBSrec    39
-           rep('Desmielin', 8),   # GBS        4
+           rep('Desmielin', 8),   # Guillain-Barrérec    38
+           rep('Axonal', 8),      # Guillain-Barrérec    39
+           rep('Desmielin', 8),   # Guillain-Barré        4
            rep('não', 8),         # Chikv     40
            rep('não', 8),         # Chikv rec 41
            rep('não', 8),         # Chikv rec 42
            rep('não', 8),         # Chikv rec 46
            rep('não', 8),         # Chikv rec 47
            rep('não', 8),         # Zika      48
-           rep('Desmielin', 8),   # GBSrec     7
-           rep('Desmielin', 8),   # GBSrec     8
-           rep('Desmielin', 8))   # GBSrec     9
+           rep('Desmielin', 8),   # Guillain-Barrérec     7
+           rep('Desmielin', 8),   # Guillain-Barrérec     8
+           rep('Desmielin', 8))   # Guillain-Barrérec     9
 
 
 length(diagn)
 
 # Coluna 7
 # Sexo
-sex <- c(rep('Fem', 8),  # GBS        1
+sex <- c(rep('Fem', 8),  # Guillain-Barré        1
          rep('Fem', 8),  # Control   10
          rep('Mas', 8),  # Control   11
          rep('Fem', 8),  # Zika      12
-         rep('Mas', 8),  # GBS       13
-         rep('Mas', 8),  # GBS       14
-         rep('Mas', 8),  # GBSrec    16 
+         rep('Mas', 8),  # Guillain-Barré       13
+         rep('Mas', 8),  # Guillain-Barré       14
+         rep('Mas', 8),  # Guillain-Barrérec    16 
          rep('Fem', 8),  # Chikv rec 18
          rep('Mas', 8),  # Control   19
-         rep('Fem', 8),  # GBS        2
+         rep('Fem', 8),  # Guillain-Barré        2
          rep('Mas', 8),  # Control   20
          rep('Fem', 8),  # Chikv     22
          rep('Fem', 8),  # Zika      24
-         rep('Fem', 8),  # GBS       25
-         rep('Fem', 8),  # GBSrec    27
-         rep('Mas', 8),  # GBSrec    28
-         rep('Fem', 8),  # GBSrec    30
+         rep('Fem', 8),  # Guillain-Barré       25
+         rep('Fem', 8),  # Guillain-Barrérec    27
+         rep('Mas', 8),  # Guillain-Barrérec    28
+         rep('Fem', 8),  # Guillain-Barrérec    30
          rep('Mas', 8),  # Chikv     31
          rep('Fem', 8),  # Chikv     32
          rep('Fem', 8),  # Control   33  
          rep('Mas', 8),  # Control   34
          rep('Fem', 8),  # Chikv rec 35
          rep('Fem', 8),  # Zika      36
-         rep('Mas', 8),  # GBSrec    38
-         rep('Fem', 8),  # GBSrec    39
-         rep('Fem', 8),  # GBS        4
+         rep('Mas', 8),  # Guillain-Barrérec    38
+         rep('Fem', 8),  # Guillain-Barrérec    39
+         rep('Fem', 8),  # Guillain-Barré        4
          rep('Mas', 8),  # Chikv     40
          rep('Fem', 8),  # Chikv rec 41
          rep('Fem', 8),  # Chikv rec 42
          rep('Fem', 8),  # Chikv rec 46
          rep('Fem', 8),  # Chikv rec 47
          rep('Fem', 8),  # Zika      48
-         rep('Fem', 8),  # GBSrec     7
-         rep('Mas', 8),  # GBSrec     8
-         rep('Fem', 8))  # GBSrec     9
+         rep('Fem', 8),  # Guillain-Barrérec     7
+         rep('Mas', 8),  # Guillain-Barrérec     8
+         rep('Fem', 8))  # Guillain-Barrérec     9
 
 length(sex)
 
@@ -310,35 +310,32 @@ samples_info <- samples_info %>%
 samples_info <- samples_info %>% 
   filter(!grepl(CHIKV, pop))
 
+samples_info <- samples_info %>% 
+  filter(!grepl(ZIKA, pop))
+
 samples_info
 
 ## ------------------------------------------------------------------------------------ ##
 length(samples_info$condition)
 # Salvar a tabela no formato .txt (tsv)
-write.table(samples_info, './tables/gbs/condition_zika_gbs_gbs_rec_vs_control.txt', sep = '\t')
+write.table(samples_info, './tables/Guillain-Barré/condition_zika_Guillain-Barré_Guillain-Barré_rec_vs_control.txt', sep = '\t')
 
 # Criar um vetor nomeado apontando os arquivos de quantificação.
 # Estes arquivos têm seus nomes anotados em uma tabela (samples.txt).
-samples <- read.table('./tables/gbs/condition_zika_gbs_gbs_rec_vs_control.txt', header = TRUE, row.names = 1)
+samples <- read.table('./tables/Guillain-Barré/condition_Guillain-Barré_Guillain-Barré_rec_vs_control.txt', header = TRUE, row.names = 1)
 head(samples, 9)
 samples$condition 
-mode(samples)
 
 # Nomeando as linhas com nome de cada arquivo de amostra:
 rownames(samples) <- samples$run
 
 samples
 
-
-# Relevel: ajustando a condição referência para análise
-samples$condition <- relevel(samples$condition, ref = 'control')
-
 # Obtendo cada arquivo de replicata das amostras usadas em kallisto:
 files <- file.path(dir, samples$run, 'abundance.h5')
 files
 names(files) <- samples$run
-files
-length(files)
+head(files, 9)
 
 ## Usando biomaRt para nomear transcritos e genes
 mart <- biomaRt::useMart(biomart = "ensembl", 
@@ -378,7 +375,7 @@ head(txi.kallisto$abundance)
 
 # Salvamento de um objeto R para uso posterior:
 #dir.create(path = "./count_estimates/")
-save(txi.kallisto, file = "./count_estimates/gbs/ZGB.Rdata")
+#save(txi.kallisto, file = "./count_estimates/zika/zika.Rdata")
 
 
 #### Parte IV - DESeq2
@@ -392,15 +389,15 @@ dds.txi$condition <- relevel(dds.txi$condition, ref = 'control')
 str(dds.txi$condition)
 
 # Observar as amostras:
-as.data.frame(colData(dds.txi))
-# ou:
-head(dds.txi$condition)
+head(as.data.frame(colData(dds.txi)), 12)
+
+
 # Agora, o objeto dds.Txi pode ser usado como aquele dds nos
 # passos subsequentes de DESeq2.
 head(dds.txi$condition)
 
 # Se uma das condições for retirada da análise ($condition), 
-# é preciso fazer um drop level dos fatores restantes.
+# será preciso fazer um drop level dos fatores restantes.
 #dds.txi$condition <- droplevels( dds.txi$condition)
 
 ## Pre-filtering
@@ -408,10 +405,10 @@ head(dds.txi$condition)
 # Remover genes sem contagens significantes para as amostras. Neste caso, no mínimo 10 contagens.
 keep <- rowSums(counts(dds.txi)) >= 10
 
-
 # Renomear dds.txi para dds:
-dds <- dds.txi[keep,]
+dds <- dds.txi[keep, ]
 
+head(dds, 9)
 # Outra forma:
 #dds <- dds.txi[rowSums(counts(dds.txi)) >= 10, ]
 
@@ -421,15 +418,14 @@ head(dds$condition, 9)
 design(dds)
 
 
-
-###--------- Análise de Expressão Diferencial (DE) ---------###
+###----------------- Análise de Expressão Diferencial (DE) ----------------- ###
 # Objeto dds por DESeq2
 # Modelando as contagens com efeitos de condition vs control
 dds <- DESeq(dds)
 
 # A função results gera tabelas de resultados.
 # condition chikv rec vs control 
-res <- results(dds)
+res <- results(dds, alpha = 0.05)
 
 # Note que podemos especificar o coeficiente ou contraste 
 # que queremos construir como uma tabela de resultados, usando:
@@ -440,14 +436,20 @@ res
 # Summary
 summary(res)
 
-# Salvar .csv Wald test p-value: condition gbs/gbs_rec vs control em .csv para fgsea
-write.csv(as.data.frame(res), file = './GSEA/gbs/condition_gbs_vs_control.csv')
-
 # Informações de metadados do objeto res: colunas.
 mcols(res, use.names=TRUE)
 
+# Salvar .csv Wald test p-value: condition Guillain-Barré/Guillain-Barré_rec vs control em .csv para fgsea
+write.csv(as.data.frame(res), file = './GSEA/Guillain-Barré/fgsea_condition_Guillain-Barré_rec_vs_control.csv')
+
+## Reordenando Resultados com p-values e adjusted p-values
+# Ordenar os resultados da tabela por menor p value:
+resOrdered <- res[order(res$pvalue), ]
+resOrdered
+write.csv(as.data.frame(resOrdered), file = './tables/Guillain-Barré/resOrdered/resOrdered_Guillain-Barré_rec_vs_control.csv')
 # Examinando as contagens e contagens normalizadas para os genes com menor p-value:
 idx <- which.min(res$pvalue)
+idx
 counts(dds)[idx, ]
 
 #Normalization
@@ -455,53 +457,59 @@ counts(dds, normalized=TRUE)[ idx, ]
 
 # Outras comparações:
 # Usar argumento 'contrast = ' na função results(); 
-# Especificar 3 valores como parâmetros: o nome da variável (coluna $condition); level numerador (gbs); level denominador (control).
+# Especificar 3 valores como parâmetros: o nome da variável (coluna $condition); level numerador (Guillain-Barré); level denominador (control).
 # Cada objeto abaixo é um objeto "res" modificado para a análise que interessar:
-res2gbs <- results(dds, contrast = c("condition", "gbs", "control")) # == res
-res2gbs_rec <- results(dds, contrast = c("condition", "gbs_rec", "control"))
-res2gbsall <- results(dds, contrast = c("condition", "gbs_rec", "gbs"))
+res2Guillain-Barré <- results(dds, contrast = c("condition", "Guillain-Barré", "control"))
+res2Guillain-Barré_rec <- results(dds, contrast = c("condition", "Guillain-Barré_rec", "control"))
+res2Guillain-Barréall <- results(dds, contrast = c("condition", "Guillain-Barré_rec", "Guillain-Barré"))
 
-res
-res2gbs
-res2gbs_rec
-res2gbsall
+res2Guillain-Barré
+mcols(res2Guillain-Barré, use.names=TRUE)
+
+res2Guillain-Barré_rec
+mcols(res2Guillain-Barré_rec, use.names=TRUE)
+
+res2Guillain-Barréall
+mcols(res2Guillain-Barréall, use.names=TRUE)
 
 ####------------------- Criar .CSV (pode ser usado em fgsea) -------------------####
-# Salvar .csv Wald test p-value: condition gbs/gbs_rec vs control em .csv para fgsea
+##### Esse adendo pode ser pulado. Existe apenas como possibiliade de testar alternativa.
+
+# Salvar .csv Wald test p-value: condition Guillain-Barré/Guillain-Barré_rec vs control em .csv para fgsea
 # Abaixo .csv já criado na linha 444 deste código:
-write.csv(as.data.frame(res), file = './GSEA/gbs/condition_gbs_vs_control.csv')
-write.csv(as.data.frame(res2gbs), file = './GSEA/gbs/condition_gbs_vs_control.csv')
-contrGBSvsCONTROL <- as.data.frame(res2gbs)
-write.csv(contrGBSvsCONTROL, file = './GSEA/gbs/condition_gbs_vs_control.csv')
+write.csv(as.data.frame(res), file = './GSEA/Guillain-Barré/condition_Guillain-Barré_vs_control.csv')
+write.csv(as.data.frame(res2Guillain-Barré), file = './GSEA/Guillain-Barré/condition_Guillain-Barré_vs_control.csv')
+contrGuillain-BarrévsCONTROL <- as.data.frame(res2Guillain-Barré)
+write.csv(contrGuillain-BarrévsCONTROL, file = './GSEA/Guillain-Barré/condition_Guillain-Barré_vs_control.csv')
 
 
 # Formas alternativas de arquivos .csv para fgsea:
-# Outra forma .csv para fgsea (gbs rec):
-contrGBSrecvsCONTROL <- as.data.frame(results(dds, contrast=c('condition','gbs_rec','control')))
-write.csv(contrGBSrecvsCONTROL, file = './GSEA/gbs/condition_gbs_Rec_vs_control.csv')
+# Outra forma .csv para fgsea (Guillain-Barré rec):
+contrGuillain-BarrérecvsCONTROL <- as.data.frame(results(dds, contrast=c('condition','Guillain-Barré_rec','control')))
+write.csv(contrGuillain-BarrérecvsCONTROL, file = './GSEA/Guillain-Barré/condition_Guillain-Barré_Rec_vs_control.csv')
 
 # Ou:
-res2gbs_rec <- results(dds, contrast = c("condition", "gbs_rec", "control"))
-write.csv(as.data.frame(res2gbs_rec), file = './GSEA/gbs/condition_gbs_Rec_vs_control.csv')
+res2Guillain-Barré_rec <- results(dds, contrast = c("condition", "Guillain-Barré_rec", "control"))
+write.csv(as.data.frame(res2Guillain-Barré_rec), file = './GSEA/Guillain-Barré/condition_Guillain-Barré_Rec_vs_control.csv')
 
 
 ### Análise Alternativa de Genes DE com cutoff pdaj <= 0.05 para genes DE ###
 # Observe que isto é uma forma alternativa se o cutoff não tiver sido feito em:
 # res <- results(dds, alpha=0.05)
-# https://github.com/washingtoncandeia/DESeq_IMT/blob/master/codes_DESeq2/1_GBSrecuperadosVsZika.R
+# https://github.com/washingtoncandeia/DESeq_IMT/blob/master/codes_DESeq2/1_Guillain-BarrérecuperadosVsZika.R
 
 
 # Criar uma nova coluna com os nomes (SYMBOLS) dos genes.
-contrGBSvsCONTROL$genes <- rownames(contrGBSvsCONTROL)
+contrGuillain-BarrévsCONTROL$genes <- rownames(contrGuillain-BarrévsCONTROL)
 
 # Remoção de NAs na coluna de padj.
-contrGBSvsCONTROL$padj[is.na(contrGBSvsCONTROL$padj)] <- 1
+contrGuillain-BarrévsCONTROL$padj[is.na(contrGuillain-BarrévsCONTROL$padj)] <- 1
 
-DEGscontrGBSvsCONTROL <- subset(contrGBSvsCONTROL, padj <= 0.05 & abs(log2FoldChange) > 1)
+DEGscontrGuillain-BarrévsCONTROL <- subset(contrGuillain-BarrévsCONTROL, padj <= 0.05 & abs(log2FoldChange) > 1)
 
 
 #Volcanoplot
-with(as.data.frame(contrGBSvsCONTROL[!(-log10(contrGBSvsCONTROL$padj) == 0), ]), plot(log2FoldChange,-log10(padj), pch=16, axes=T,
+with(as.data.frame(contrGuillain-BarrévsCONTROL[!(-log10(contrGuillain-BarrévsCONTROL$padj) == 0), ]), plot(log2FoldChange,-log10(padj), pch=16, axes=T,
                                         xlim = c(-6,6), ylim = c(0,4),                                    
                                         xlab = NA, ylab = "-Log10(Pvalue-Adjusted)", main = "Guillain-Barré vs Grupo Controle"
                                                                             
@@ -523,8 +531,8 @@ abline(v=-1,col="green", lty = 2, cex= 3)
 resultsNames(dds)
 
 ## coeficientes nesta análise: 
-# coef = 1 ("condition_gbs_vs_control")     
-# coef = 2 ("condition_gbs_rec_vs_control")
+# coef = 1 ("condition_Guillain-Barré_vs_control")     
+# coef = 2 ("condition_Guillain-Barré_rec_vs_control")
 # coef = 3 ("condition_zika_vs_control") 
 
 ### LFC - Log2 Fold Changes Shrinkage
@@ -532,7 +540,9 @@ resultsNames(dds)
 # associado com mudanças log2 fold changes advindas de baixas contagens de genes
 # sem requerimento de thresholds de filtragem arbitrários.
 # Para contrair (shrink) LFC passar objeto dds para função lfcShrink:
-resLFC <- lfcShrink(dds, coef = 'condition_gbs_vs_control', type = 'apeglm')  # coef = 3
+resLFC <- lfcShrink(dds, coef = 'condition_Guillain-Barré_rec_vs_control', type = 'apeglm', res = res)
+#resLFC <- lfcShrink(dds, coef = 3, type = 'apeglm', res = res)
+
 
 # Observar
 resLFC
@@ -540,14 +550,14 @@ resLFC
 summary(resLFC)
 
 # FDR cutoff, alpha = 0.05.
-res05 <- results(dds, alpha=0.05)
-summary(res05)
+res025 <- results(dds, alpha=0.025)
+summary(res025)
 
 ### Independent Hypothesis Weighting
 ## Ponderação de Hipóteses Independentes
 # Filtragem de p value: ponderar (weight) hipóteses para otimizar o poder.
 # Está disponível no Bioconductor sob nome IHW.
-resIHW <- results(dds, filterFun = ihw)
+resIHW <- results(dds, filterFun = ihw, alpha = 0.05)
 # Metadados
 metadata(resIHW)$ihwResult
 
@@ -555,7 +565,7 @@ metadata(resIHW)$ihwResult
 # Summary
 summary(res)
 # Summary
-summary(res05)
+summary(res025)
 # Summary
 summary(resIHW)
 # Summary
@@ -564,7 +574,7 @@ summary(resLFC)
 # Quantos p-values são menores que 0.1?
 sum(res$padj < 0.1, na.rm = TRUE)
 # Quantos p-values são menores que 0.1?
-sum(res05$padj < 0.1, na.rm=TRUE)
+sum(res025$padj < 0.1, na.rm=TRUE)
 # Quantos p-values são menores que 0.1?
 sum(resIHW$padj < 0.1, na.rm=TRUE)
 # Quantos p-values são menores que 0.1?
@@ -574,12 +584,11 @@ sum(resLFC$padj < 0.1, na.rm = TRUE)
 # Quantos p-adjusted são menores que 0.05?
 sum(res$padj < 0.05, na.rm = TRUE)
 # Quantos p-adjusted são menores que 0.05?
-sum(res05$padj < 0.05, na.rm = TRUE)
+sum(res025$padj < 0.05, na.rm = TRUE)
 # Quantos p-adjusted são menores que 0.05? 
 sum(resIHW$padj < 0.05, na.rm=TRUE)
 # Quantos p-values são menores que 0.05?
 sum(resLFC$padj < 0.05, na.rm = TRUE)
-
 
 
 ##### Parte V - Exploração de Resultados
@@ -597,10 +606,7 @@ sum(resLFC$padj < 0.05, na.rm = TRUE)
 plotMA(res , ylim = c(-2, 2))
 
 # Objeto com alpha < 0.05 (adjusted p-value < 0.1)
-plotMA(res05, ylim = c(-2, 2))
-
-# Objeto reOrdenado
-plotMA(resOrdered, ylim = c(-2, 2))
+plotMA(res025, ylim = c(-2, 2))
 
 # Objeto resLFC
 plotMA(resLFC, ylim = c(-2, 2))
@@ -612,78 +618,22 @@ plotMA(resIHW, ylim = c(-2, 2))
 # Versão 1
 par(mfrow=c(2,3), mar=c(4,4,4,2))
 xlim <- c(1,1e5); ylim <- c(-3,3)
-plotMA(res, xlim=xlim, ylim=ylim, main="Zika, GBS, GBS rec vs Control \n(pdaj < 0.1)")
-plotMA(resOrdered, xlim=xlim, ylim=ylim, main="uillain-Barré Rec vs Control \n(Reordenado por menor pvalue)")
-plotMA(resLFC, xlim=xlim, ylim=ylim, main="Zika, GBS, GBS rec vs Control \n(LFC)")
-plotMA(resIHW, xlim=xlim, ylim=ylim, main="Zika, GBS, GBS rec vs Control \n(IHW)")
-plotMA(res05, xlim=xlim, ylim=ylim, main="Zika, GBS, GBS rec vs Control \n(padj < 0.05)")
+plotMA(res, xlim=xlim, ylim=ylim, main="Guillain-Barré rec vs Control \n(pdaj < 0.05)")
+plotMA(resLFC, xlim=xlim, ylim=ylim, main="Guillain-Barré rec vs Control \n(LFC)")
+plotMA(resIHW, xlim=xlim, ylim=ylim, main="Guillain-Barré rec vs Control \n(IHW)")
+plotMA(res05, xlim=xlim, ylim=ylim, main="Guillain-Barré rec vs Control \n(padj < 0.025)")
 
 # Versão 2
 par(mfrow=c(2,2), mar=c(4,4,4,2))
 xlim <- c(1,1e5); ylim <- c(-3,3)
-plotMA(res, xlim=xlim, ylim=ylim, main="Zika, GBS, GBS rec vs Control \n(pdaj < 0.1)")
-plotMA(resOrdered, xlim=xlim, ylim=ylim, main="uillain-Barré Rec vs Control \n(Reordenado por menor pvalue)")
-plotMA(resLFC, xlim=xlim, ylim=ylim, main="Zika, GBS, GBS rec vs Control \n(LFC)")
-plotMA(res05, xlim=xlim, ylim=ylim, main="Zika, GBS, GBS rec vs Control \n(padj < 0.05)")
-plotMA(resIHW, xlim=xlim, ylim=ylim, main="Zika, GBS, GBS rec vs Control \n(IHW)")
-
-
-
+plotMA(res, xlim=xlim, ylim=ylim, main="Guillain-Barré rec vs Control \n(pdaj < 0.1)")
+plotMA(resLFC, xlim=xlim, ylim=ylim, main="Guillain-Barré rec vs Control \n(LFC)")
+plotMA(res05, xlim=xlim, ylim=ylim, main="Guillain-Barré rec vs Control \n(padj < 0.05)")
+plotMA(resIHW, xlim=xlim, ylim=ylim, main="Guillain-Barré rec vs Control \n(IHW)")
 # Pontos em vermelho: se o adjusted p value for menor que 0.1.
 
 ### Alternative Shrinkage Estimators
 ## Lembrar de objeto LFC e Shrinkage
-
-# Especificar o coeficiente pela ordem em que aparece em results(dds)
-# O coeficiente usado em lfcShrink anterior (resNorm) foi "condition chikv vs control"
-# Porém, é possível especificar o coeficiente pela ordem em que aparece quando se usa resultsnames(dds):
-
-# Em argumento type, pode-se utilar os parâmetros: ashr, apeglm e normal.
-# a. ashr - adaptive shrinkage estimator from the ashr package (Stephens 2016)
-# b. apeglm - the adaptive t prior shrinkage estimator from the apeglm package (Zhu, Ibrahim, and Love 2018).
-# c. normal - estimador shrinkage original de DESeq2 (an adaptive Normal distribution as prior).
-
-
-# Usaremos o coeficiente como 2, pois é o que indica condition_chikv_vs_control.
-resultsNames(dds)
-## coeficientes nesta análise: 
-# coef = 1 ("condition_gbs_vs_control")     
-# coef = 2 ("condition_gbs_rec_vs_control")
-# coef = 3 ("condition_zika_vs_control") 
-resNorm <- lfcShrink(dds, coef="condition_zika_vs_control", type="normal")
-resAsh <- lfcShrink(dds, coef="condition_zika_vs_control", type="ashr")
-resLFC <- lfcShrink(dds, coef="condition_zika_vs_control", type='apeglm')
-
-## Agora, observar os plots juntos para coef = 3
-par(mfrow=c(1,3), mar=c(4,4,4,2))
-xlim <- c(1,1e5); ylim <- c(-3,3)
-plotMA(resLFC, xlim=xlim, ylim=ylim, main="Zika, GBS, GBS rec vs Control \n(LFC, apeglm)")
-plotMA(resNorm, xlim=xlim, ylim=ylim, main="Zika, GBS, GBS rec vs Control \n(Normalizados)")
-plotMA(resAsh, xlim=xlim, ylim=ylim, main="Zika, GBS, GBS rec vs Control \n(Adaptative Shrinkage Estimator)")
-
-# coef = 1 ("condition_gbs_vs_control")  
-resNorm <- lfcShrink(dds, coef="condition_gbs_vs_control", type="normal")
-resAsh <- lfcShrink(dds, coef="condition_gbs_vs_control", type="ashr")
-resLFC <- lfcShrink(dds, coef="condition_gbs_vs_control", type='apeglm')
-
-## Agora, observar os plots juntos para coef = 3
-par(mfrow=c(1,3), mar=c(4,4,4,2))
-xlim <- c(1,1e5); ylim <- c(-3,3)
-plotMA(resLFC, xlim=xlim, ylim=ylim, main="Zika, GBS, GBS rec vs Control  \n(LFC, apeglm)")
-plotMA(resNorm, xlim=xlim, ylim=ylim, main="Zika, GBS, GBS rec vs Control  \n(Normalizados)")
-plotMA(resAsh, xlim=xlim, ylim=ylim, main="Zika, GBS, GBS rec vs Control  \n(Adaptative Shrinkage Estimator)")
-
-# Coeficiente 2: chikv_vs_control
-resNorm2 <- lfcShrink(dds, coef=2, type="normal")
-resAsh2 <- lfcShrink(dds, coef=2, type="ashr")
-resLFC2 <- lfcShrink(dds, coef=2, type='apeglm')
-
-# Agora, observar os plots juntos para coef = 2
-par(mfrow=c(1,3), mar=c(4,4,4,2))
-xlim <- c(1,1e5); ylim <- c(-3,3)
-plotMA(resLFC2, xlim=xlim, ylim=ylim, main="Guillain-Barré Doentes vs Control \n(LFC, apeglm)")
-plotMA(resNorm2, xlim=xlim, ylim=ylim, main="Guillain-Barré Doentes vs Control \n(Normalizados)")
-plotMA(resAsh2, xlim=xlim, ylim=ylim, main="Guillain-Barré Doentes vs Control \n(Adaptative Shrinkage Estimator)")
 
 
 ## Plot counts
@@ -704,26 +654,81 @@ ggplot(a, aes(x=condition, y=count)) +
   scale_y_log10(breaks=c(25,100,400))
 
 
-# Outros genes: adicionar on ID (nome):
+# Outros genes: adicionar on ID (nome): TYMP
+# Gene 2 da lista organizada por pvalue: ENSG00000025708 TYMP
+plotCounts(dds, gene='ENSG00000025708', intgroup="condition")
+# Gene3
 plotCounts(dds, gene='ENSG00000135845', intgroup="condition")
+# Gene 4
+plotCounts(dds, gene='ENSG00000104765', intgroup="condition")
+# Gene 5
+plotCounts(dds, gene='ENSG00000153574', intgroup="condition")
+# Gene 6
+plotCounts(dds, gene='ENSG00000137267', intgroup="condition")
+# Gene 7
+plotCounts(dds, gene='ENSG00000198692', intgroup="condition")
+# Gene 8
+plotCounts(dds, gene='ENSG00000141574', intgroup="condition")
+# Gene 9
+plotCounts(dds, gene='ENSG00000013561', intgroup="condition")
+# Gene 10
+plotCounts(dds, gene='ENSG00000155749', intgroup="condition")
 
-# Outros genes
-b <- plotCounts(dds, gene='ENSG00000135845', intgroup="condition", returnData = T)
-library("ggplot2")
-ggplot(b, aes(x=condition, y=count)) + 
-  geom_point(position=position_jitter(w=0.1,h=0)) + 
-  scale_y_log10(breaks=c(25,100,400))
 
-# Outros genes
-c <- plotCounts(dds, gene='ENSG00000168300', intgroup="condition", returnData = T)
+# Outra forma, usando ggplot2
+# Gene 3: PIGC
+c <- plotCounts(dds, gene='ENSG00000135845', intgroup="condition", returnData = T)
 library("ggplot2")
 ggplot(c, aes(x=condition, y=count)) + 
   geom_point(position=position_jitter(w=0.1,h=0)) + 
   scale_y_log10(breaks=c(25,100,400))
 
-d <- plotCounts(dds, gene='ENSG00000254708', intgroup="condition", returnData = T)
+# Gene 4: BNIP3L
+d <- plotCounts(dds, gene='ENSG00000104765', intgroup="condition", returnData = T)
 library("ggplot2")
 ggplot(d, aes(x=condition, y=count)) + 
+  geom_point(position=position_jitter(w=0.1,h=0)) + 
+  scale_y_log10(breaks=c(25,100,400))
+
+# Gene 5: RPIA
+e <- plotCounts(dds, gene='ENSG00000153574', intgroup="condition", returnData = T)
+library("ggplot2")
+ggplot(e, aes(x=condition, y=count)) + 
+  geom_point(position=position_jitter(w=0.1,h=0)) + 
+  scale_y_log10(breaks=c(25,100,400))
+
+# Gene 6: TUBB2A 
+f <- plotCounts(dds, gene='ENSG00000137267', intgroup="condition", returnData = T)
+library("ggplot2")
+ggplot(e, aes(x=condition, y=count)) + 
+  geom_point(position=position_jitter(w=0.1,h=0)) + 
+  scale_y_log10(breaks=c(25,100,400))
+
+# Gene 7: EIF1AY
+g <- plotCounts(dds, gene='ENSG00000198692', intgroup="condition", returnData = T)
+library("ggplot2")
+ggplot(g, aes(x=condition, y=count)) + 
+  geom_point(position=position_jitter(w=0.1,h=0)) + 
+  scale_y_log10(breaks=c(25,100,400))
+
+# Gene 8: SECTM1
+h <- plotCounts(dds, gene='ENSG00000141574', intgroup="condition", returnData = T)
+library("ggplot2")
+ggplot(h, aes(x=condition, y=count)) + 
+  geom_point(position=position_jitter(w=0.1,h=0)) + 
+  scale_y_log10(breaks=c(25,100,400))
+
+# Gene 9: RNF14
+i <- plotCounts(dds, gene='ENSG00000013561', intgroup="condition", returnData = T)
+library("ggplot2")
+ggplot(i, aes(x=condition, y=count)) + 
+  geom_point(position=position_jitter(w=0.1,h=0)) + 
+  scale_y_log10(breaks=c(25,100,400))
+
+# Gene 10: FLACC1
+j <- plotCounts(dds, gene='ENSG00000155749', intgroup="condition", returnData = T)
+library("ggplot2")
+ggplot(j, aes(x=condition, y=count)) + 
   geom_point(position=position_jitter(w=0.1,h=0)) + 
   scale_y_log10(breaks=c(25,100,400))
 
@@ -732,8 +737,11 @@ mcols(res)$description
 
 # Exporting only the results which pass an adjusted p value threshold 
 # can be accomplished with the subset function, followed by the write.csv function.
-resSig <- subset(resOrdered, padj < 0.1)
+resSig <- subset(resOrdered, padj < 0.025)
 resSig
+
+write.csv(as.data.frame(resSig), file = './tables/gbs/resOrdered/resSig_0_025_gbs_rec_vs_control.csv')
+
 
 ###### Parte VI
 ## Transformação e Visualização de Dados
@@ -824,6 +832,18 @@ pheatmap(sampleDistMatrix,
          clustering_distance_cols=sampleDists,
          col=colors)
 
+sampleDists <- dist(t(assay(rld)))
+
+# library(RColorBrewer)
+sampleDistMatrix <- as.matrix(sampleDists)
+rownames(sampleDistMatrix) <- paste(rld$condition, rld$run, sep=" - ")
+colnames(sampleDistMatrix) <- NULL
+colors <- colorRampPalette( rev(brewer.pal(9, "Reds")) )(255)
+pheatmap(sampleDistMatrix,
+         clustering_distance_rows=sampleDists,
+         clustering_distance_cols=sampleDists,
+         col=colors)
+
 
 ### PCA - Principal component plot das amostras
 # O plot PCA está relacionado à matriz de distância e evidencia as amostras no plano de 2D
@@ -831,9 +851,6 @@ pheatmap(sampleDistMatrix,
 # Esse gráfico é útil para visualizar o efeito geral de covariantes experimentais (e batch effects).
 
 ## Usando VST
-# vsd object
-plotPCA(vsd, intgroup=c("condition", "run"))
-
 # vsd object
 plotPCA(vsd, intgroup=c("condition", "replicate"))
 
@@ -854,101 +871,29 @@ pcaVSD <- plotPCA(vsd,
                   ntop = nrow(counts(dds)),
                   returnData=FALSE)
 
-pcaVSD2 <- plotPCA(rld, 
+pcaVSD
+
+pcaRLD <- plotPCA(rld, 
                    ntop = nrow(counts(dds)),
                    intgroup=c("condition", "replicate"),
                    returnData=FALSE)
+pcaRLD
 
-pcaVSD
-pcaVSD2
 
-pcaRLD <- plotPCA(rld, 
+pcaRLD2 <- plotPCA(rld, 
                   ntop = nrow(counts(dds)),
                   returnData=FALSE)
 
-pcaRLD2 <- plotPCA(rld, 
+pcaRLD2
+
+pcaRLD3 <- plotPCA(rld, 
                    ntop = nrow(counts(dds)),
                    intgroup=c("condition", "replicate"),
                    returnData=FALSE)
-
-pcaRLD
-pcaRLD2
+pcaRLD3
 
 # PCA sob TRUE
 plotPCA(rld, 
         ntop = nrow(counts(dds)),
         intgroup=c("condition", "replicate"),
         returnData=TRUE)
-
-
-
-## Utilizando ggplot2 com os dados
-## ggplot2
-# rsd object
-pcaData <- plotPCA(vsd, intgroup=c("condition", "replicate"), returnData = TRUE)
-percentVar <- round(100 * attr(pcaData, "percentVar"))
-ggplot(pcaData, aes(PC1, PC2, color=condition, shape=replicate)) +
-  geom_point(size=3) +
-  xlab(paste0("PC1: ",percentVar[1],"% variance")) +
-  ylab(paste0("PC2: ",percentVar[2],"% variance")) + 
-  coord_fixed()
-
-# Outra forma , de acordo com pcaRLD, pcaVSD:
-pcaData <- plotPCA(vsd,  ntop = nrow(counts(dds)), intgroup=c("condition", "replicate"), returnData = TRUE)
-percentVar <- round(100 * attr(pcaData, "percentVar"))
-ggplot(pcaData, aes(PC1, PC2, color=condition, shape=replicate)) +
-  geom_point(size=3) +
-  xlab(paste0("PC1: ",percentVar[1],"% variance")) +
-  ylab(paste0("PC2: ",percentVar[2],"% variance")) + 
-  coord_fixed()
-
-
-############ Extrair os resultados da análise de DE para .CSV ############
-# Análise de Expressão Diferencial (DE)
-# Relembrar o Objeto dds por DESeq2
-# dds <- DESeq(dds)
-
-# A função results gera tabelas de resultados.
-# condition chikv rec vs control 
-res <- results(dds)
-res
-# Salvar .csv Wald test p-value: condition chikv_rec vs control (fgsea)
-write.csv(as.data.frame(res), file = './GSEA/gbs/condition_gbs_rec_vs_control_GSEA.csv')
-
-# A forma alternativa de se fazer condition chikv_rec vs control 
-resChikrec <- results(dds, contrast=c('condition','gbs_rec','control'))
-resChikrec <- as.data.frame(resChikrec)
-resChikrec
-write.csv(resChikrec, file = './GSEA/chikv/condition_gbs_rec_vs_control_alt_GSEA.csv')
-
-# Alternativa 1: condition chikv vs control
-resChikdis <- results(dds, contrast=c('condition','gbs_rec','control'))
-resChikdis
-
-# Alternativa 2: condition chikv vs chikv_rec
-resChikvChikv <- results(dds, contrast=c('condition','gbs','gbs_rec'))
-resChikvChikv
-
-# Criar csv para os contrastes acima (pode ser usado em fgsea)
-write.csv(as.data.frame(res), file = './GSEA/gbs/condition_gbs_rec_vs_control_GSEA.csv')              # Coeficiente 3
-write.csv(as.data.frame(resChikrec), file = './GSEA/gbs/condition_gbsrec_vs_control_alt_GSEA.csv')   # Coeficiente 3
-write.csv(as.data.frame(resChikdis), file = './GSEA/gbs/condition_gbs_rec_vs_control_GSEA.csv')   # Coeficiente 2
-#write.csv(as.data.frame(resChikvChikv), file = './GSEA/chikv/condition_chikv_rec_chikv_doentes_GSEA.csv')
-
-
-## Reordenando Resultados com p-values e adjusted p-values
-# Ordenar os resultados da tabela por menor p value:
-resOrdered <- res[order(res$pvalue), ]
-
-# Criar csv (pode ser usado em fgsea)
-write.csv(as.data.frame(resOrdered), file = './GSEA/gbs/condition_gbs_rec_vs_control_resOrdered_GSEA.csv')
-
-# res05 padj < 0.05
-write.csv(as.data.frame(res05), file = './GSEA/gbs/condition_gbs_rec_vs_control_res05padj_GSEA.csv')
-### Lembrar dos objetos:
-# res
-# res05 (padj < 0.05)
-# resOrdered
-# resLFC
-# resNorm
-# resAsh
