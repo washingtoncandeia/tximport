@@ -4,8 +4,7 @@
 # alpha = 0.05 (FDR, padj < 0.05)
 # Wald test p-value: condition gbs vs control
 # Wald test p-value: condition gbs_rec vs control
-# Wald test p-value: condition gbs_rec vs gbs 
-# Data: 16/12/2019
+# Data: 06/01/2020
 ##---------------------------------------------
 library(tximport)
 library(apeglm)
@@ -282,22 +281,6 @@ str(samples_info)
 names(samples_info)
 
 
-# Observar cada coluna:
-samples_info$pop
-samples_info$center
-samples_info$run
-samples_info$condition
-samples_info$replicate
-samples_info$pair
-samples_info$sex
-str(samples_info$pop)
-str(samples_info$condition)
-str(samples_info$run)
-str(samples_info$replicate)
-str(samples_info$pair)
-str(samples_info$sex)
-
-
 ## -------------------- Eliminando Linhas do Data Frame por Nomes  -------------------- ##
 ## Quando necessário o uso de um data frame menor, com apenas algumas variáveis.
 
@@ -309,25 +292,26 @@ samples_info <- samples_info %>%
 samples_info <- samples_info %>% 
   filter(!grepl(CHIKV, pop))
 
+samples_info <- samples_info %>% 
+  filter(!grepl(ZIKA, pop))
+
 samples_info
 
 ## ------------------------------------------------------------------------------------ ##
 length(samples_info$condition)
 # Salvar a tabela no formato .txt (tsv)
-write.table(samples_info, './tables/gbs/condition_zika_gbs_gbs_rec_vs_control.txt', sep = '\t')
+write.table(samples_info, './tables/gbs/condition_gbs_gbs_rec_vs_control.txt', sep = '\t')
 
 # Criar um vetor nomeado apontando os arquivos de quantificação.
 # Estes arquivos têm seus nomes anotados em uma tabela (samples.txt).
-samples <- read.table('./tables/gbs/condition_zika_gbs_gbs_rec_vs_control.txt', header = TRUE, row.names = 1)
+samples <- read.table('./tables/gbs/condition_gbs_gbs_rec_vs_control.txt', header = TRUE, row.names = 1)
 head(samples, 9)
 samples$condition 
-mode(samples)
 
 # Nomeando as linhas com nome de cada arquivo de amostra:
 rownames(samples) <- samples$run
 
 samples
-
 
 # Relevel: ajustando a condição referência para análise
 samples$condition <- relevel(samples$condition, ref = 'control')
@@ -377,7 +361,7 @@ head(txi.kallisto$abundance)
 
 # Salvamento de um objeto R para uso posterior:
 #dir.create(path = "./count_estimates/")
-save(txi.kallisto, file = "./count_estimates/gbs/ZGB.Rdata")
+#save(txi.kallisto, file = "./count_estimates/gbs/gbs.Rdata")
 
 
 #### Parte IV - DESeq2
@@ -391,26 +375,22 @@ dds.txi$condition <- relevel(dds.txi$condition, ref = 'control')
 str(dds.txi$condition)
 
 # Observar as amostras:
-as.data.frame(colData(dds.txi))
-# ou:
-head(dds.txi$condition)
+head(as.data.frame(colData(dds.txi)), 12)
+
+
 # Agora, o objeto dds.Txi pode ser usado como aquele dds nos
 # passos subsequentes de DESeq2.
 head(dds.txi$condition)
-
-# Se uma das condições for retirada da análise ($condition), 
-# é preciso fazer um drop level dos fatores restantes.
-#dds.txi$condition <- droplevels( dds.txi$condition)
 
 ## Pre-filtering
 # Filtrar por counts insignificantes.
 # Remover genes sem contagens significantes para as amostras. Neste caso, no mínimo 10 contagens.
 keep <- rowSums(counts(dds.txi)) >= 10
 
-
 # Renomear dds.txi para dds:
-dds <- dds.txi[keep,]
+dds <- dds.txi[keep, ]
 
+head(dds, 9)
 # Outra forma:
 #dds <- dds.txi[rowSums(counts(dds.txi)) >= 10, ]
 
@@ -420,15 +400,14 @@ head(dds$condition, 9)
 design(dds)
 
 
-
-###--------- Análise de Expressão Diferencial (DE) ---------###
+###----------------- Análise de Expressão Diferencial (DE) ----------------- ###
 # Objeto dds por DESeq2
 # Modelando as contagens com efeitos de condition vs control
 dds <- DESeq(dds)
 
 # A função results gera tabelas de resultados.
 # condition chikv rec vs control 
-res <- results(dds)
+res <- results(dds, alpha = 0.05)
 
 # Note que podemos especificar o coeficiente ou contraste 
 # que queremos construir como uma tabela de resultados, usando:
@@ -439,11 +418,20 @@ res
 # Summary
 summary(res)
 
+# Informações de metadados do objeto res: colunas.
+mcols(res, use.names=TRUE)
+
 # Salvar .csv Wald test p-value: condition gbs/gbs_rec vs control em .csv para fgsea
 write.csv(as.data.frame(res), file = './GSEA/gbs/condition_gbs_vs_control.csv')
 
 # Informações de metadados do objeto res: colunas.
 mcols(res, use.names=TRUE)
+
+## Reordenando Resultados com p-values e adjusted p-values
+# Ordenar os resultados da tabela por menor p value:
+resOrdered <- res[order(res$pvalue), ]
+resOrdered
+write.csv(as.data.frame(resOrdered), file = './tables/gbs/resOrdered/resOrdered_gbs_rec_vs_control.csv')
 
 # Examinando as contagens e contagens normalizadas para os genes com menor p-value:
 idx <- which.min(res$pvalue)
@@ -451,6 +439,75 @@ counts(dds)[idx, ]
 
 #Normalization
 counts(dds, normalized=TRUE)[ idx, ]
+
+# Examinando as contagens e contagens normalizadas para os genes com menor p-value:
+idx <- which.min(res$pvalue)
+idx
+counts(dds)[idx, ]
+
+#Normalization
+norm.Counts <- counts(dds, normalized=TRUE)[ idx, ]
+norm.Counts
+
+## Continuação:
+## Log fold change shrinkage for visualization and ranking
+# Contração log fod change para visualização e ranqueamento.
+# Shrinkage of effect size (LFC estimates)
+resultsNames(dds)
+
+# coef = 2 ("condition_chikv_vs_control")
+# coef = 3 ("condition_chikv_rec_vs_control") 
+
+### LFC - Log2 Fold Changes Shrinkage
+## Visualizando para log2 fold changes shrinkage, LFC (Shrinkage of Effect Size)
+# associado com mudanças log2 fold changes advindas de baixas contagens de genes
+# sem requerimento de thresholds de filtragem arbitrários.
+# Para contrair (shrink) LFC passar objeto dds para função lfcShrink:
+resLFC <- lfcShrink(dds, coef = 'condition_gbs_vs_control', type = 'apeglm')  # coef = 3
+
+# Observar
+resLFC
+# Summary
+summary(resLFC)
+
+# FDR cutoff, alpha = 0.05.
+res05 <- results(dds, alpha=0.05)
+summary(res05)
+
+### Independent Hypothesis Weighting
+## Ponderação de Hipóteses Independentes
+# Filtragem de p value: ponderar (weight) hipóteses para otimizar o poder.
+# Está disponível no Bioconductor sob nome IHW.
+resIHW <- results(dds, filterFun = ihw)
+### LFC - Log2 Fold Changes Shrinkage
+## Visualizando para log2 fold changes shrinkage, LFC (Shrinkage of Effect Size)
+# Para contrair (shrink) LFC passar objeto dds para função lfcShrink:
+resLFC <- lfcShrink(dds, coef = 3, type = 'apeglm', res = res)
+
+# Observar
+resLFC
+# Summary
+summary(resLFC)
+
+# FDR cutoff, alpha = 0.05.
+res025 <- results(dds, alpha=0.025)
+summary(res025)
+
+### Independent Hypothesis Weighting
+## Ponderação de Hipóteses Independentes
+# Filtragem de p value: ponderar (weight) hipóteses para otimizar o poder.
+# Está disponível no Bioconductor sob nome IHW.
+resIHW <- results(dds, filterFun = ihw, alpha = 0.05)
+resIHW
+# Summary
+summary(res)
+# Summary
+summary(res025)
+# Summary
+summary(resIHW)
+# Summary
+summary(resLFC)
+
 
 # Outras comparações:
 # Usar argumento 'contrast = ' na função results(); 
@@ -524,61 +581,6 @@ resultsNames(dds)
 ## coeficientes nesta análise: 
 # coef = 1 ("condition_gbs_vs_control")     
 # coef = 2 ("condition_gbs_rec_vs_control")
-# coef = 3 ("condition_zika_vs_control") 
-
-### LFC - Log2 Fold Changes Shrinkage
-## Visualizando para log2 fold changes shrinkage, LFC (Shrinkage of Effect Size)
-# associado com mudanças log2 fold changes advindas de baixas contagens de genes
-# sem requerimento de thresholds de filtragem arbitrários.
-# Para contrair (shrink) LFC passar objeto dds para função lfcShrink:
-resLFC <- lfcShrink(dds, coef = 'condition_gbs_vs_control', type = 'apeglm')  # coef = 3
-
-# Observar
-resLFC
-# Summary
-summary(resLFC)
-
-# FDR cutoff, alpha = 0.05.
-res05 <- results(dds, alpha=0.05)
-summary(res05)
-
-### Independent Hypothesis Weighting
-## Ponderação de Hipóteses Independentes
-# Filtragem de p value: ponderar (weight) hipóteses para otimizar o poder.
-# Está disponível no Bioconductor sob nome IHW.
-resIHW <- results(dds, filterFun = ihw)
-# Metadados
-metadata(resIHW)$ihwResult
-
-
-# Summary
-summary(res)
-# Summary
-summary(res05)
-# Summary
-summary(resIHW)
-# Summary
-summary(resLFC)
-
-# Quantos p-values são menores que 0.1?
-sum(res$padj < 0.1, na.rm = TRUE)
-# Quantos p-values são menores que 0.1?
-sum(res05$padj < 0.1, na.rm=TRUE)
-# Quantos p-values são menores que 0.1?
-sum(resIHW$padj < 0.1, na.rm=TRUE)
-# Quantos p-values são menores que 0.1?
-sum(resLFC$padj < 0.1, na.rm = TRUE)
-
-
-# Quantos p-adjusted são menores que 0.05?
-sum(res$padj < 0.05, na.rm = TRUE)
-# Quantos p-adjusted são menores que 0.05?
-sum(res05$padj < 0.05, na.rm = TRUE)
-# Quantos p-adjusted são menores que 0.05? 
-sum(resIHW$padj < 0.05, na.rm=TRUE)
-# Quantos p-values são menores que 0.05?
-sum(resLFC$padj < 0.05, na.rm = TRUE)
-
 
 
 ##### Parte V - Exploração de Resultados
@@ -611,8 +613,8 @@ plotMA(resIHW, ylim = c(-2, 2))
 # Versão 1
 par(mfrow=c(2,3), mar=c(4,4,4,2))
 xlim <- c(1,1e5); ylim <- c(-3,3)
-plotMA(res, xlim=xlim, ylim=ylim, main="Zika, GBS, GBS rec vs Control \n(pdaj < 0.1)")
-plotMA(resOrdered, xlim=xlim, ylim=ylim, main="uillain-Barré Rec vs Control \n(Reordenado por menor pvalue)")
+plotMA(res, xlim=xlim, ylim=ylim, main="GBS, GBS rec vs Control \n(pdaj < 0.1)")
+plotMA(resOrdered, xlim=xlim, ylim=ylim, main="Guillain-Barré Rec vs Control \n(Reordenado por menor pvalue)")
 plotMA(resLFC, xlim=xlim, ylim=ylim, main="Zika, GBS, GBS rec vs Control \n(LFC)")
 plotMA(resIHW, xlim=xlim, ylim=ylim, main="Zika, GBS, GBS rec vs Control \n(IHW)")
 plotMA(res05, xlim=xlim, ylim=ylim, main="Zika, GBS, GBS rec vs Control \n(padj < 0.05)")
