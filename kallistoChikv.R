@@ -416,12 +416,10 @@ res
 # Summary
 summary(res)
 
-write(as.data.frame(summary(res)), file = './summary_res/chikv/summary_chikv_rec_vs_control.csv')
-
 # Informações de metadados do objeto res: colunas.
 mcols(res, use.names=TRUE)
 
-# Salvar .csv Wald test p-value: condition gbs/gbs_rec vs control em .csv para fgsea
+# Salvar .csv Wald test p-value: condition chikv/chikv_rec vs control em .csv para fgsea
 write.csv(as.data.frame(res), file = './GSEA/chikv/fgsea_condition_CHIKV_vs_control.csv')
 
 ## Reordenando Resultados com p-values e adjusted p-values
