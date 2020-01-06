@@ -4,7 +4,7 @@
 # alpha = 0.05 (FDR, padj < 0.05)
 # Wald test p-value: condition chikv vs control
 # Wald test p-value: condition chikv_rec vs control
-# Data: 04/01/2020
+# Data: 05/01/2020
 ##---------------------------------------------
 library(tximport)
 library(apeglm)
@@ -353,14 +353,11 @@ head(t2g, 9)
 txi.kallisto <- tximport(files, 
                          type = 'kallisto',
                          tx2gene = t2g,
-                         txOut = TRUE,
                          ignoreTxVersion = TRUE,
                          ignoreAfterBar = TRUE)
 
-mode(txi.kallisto)
-#save(txi.kallisto, file = "./count_estimates/txi_count_Trip_estimates.Rdata")
-save(as.l(txi.kallisto), file = "'./tables/chikv/txi_condition_CHIKV_vs_control.txt")
-write.csv(as.data.frame(txi.kallisto), file = './tables/chikv/txi_condition_CHIKV_vs_control.csv')
+# Para summerização em nível de trasncrito, i.e., analise de uso diferencial de transcritos,
+# é preciso usar o argumento txOut = TRUE na função
 
 # Observações gerais
 names(txi.kallisto)
@@ -419,6 +416,8 @@ res
 # Summary
 summary(res)
 
+write(as.data.frame(summary(res)), file = './summary_res/chikv/summary_chikv_rec_vs_control.csv')
+
 # Informações de metadados do objeto res: colunas.
 mcols(res, use.names=TRUE)
 
@@ -467,7 +466,7 @@ summary(res025)
 # Filtragem de p value: ponderar (weight) hipóteses para otimizar o poder.
 # Está disponível no Bioconductor sob nome IHW.
 resIHW <- results(dds, filterFun = ihw, alpha = 0.05)
-
+resIHW
 # Summary
 summary(res)
 # Summary
@@ -512,6 +511,66 @@ plotMA(resIHW, xlim=xlim, ylim=ylim, main="Febre Chikungunya vs Controles \n(IHW
 
 # Pontos em vermelho: se o adjusted p value for menor que 0.1.
 
+
+# Ordenar os resultados da tabela por menor p value:
+resOrdered <- res[order(res$pvalue), ]
+write.csv(as.data.frame(resOrdered), file = './tables/chikv/resOrdered/resOrdered-pvalue_CHIKV_vs_control.csv')
+resOrdered.2 <- res[order(res$log2FoldChange), ]
+resOrdered.2
+write.csv(as.data.frame(resOrdered), file = './tables/chikv/resOrdered/resOrdered-Log2FC_CHIKV_vs_control.csv')
+
+########################################### SELEÇÃO GENES UP e DOWN ###########################################
+contr_chikv_rec <- as.data.frame(res)
+
+# Criar uma nova coluna com os nomes (SYMBOLS) dos genes.
+contr_chikv_rec$genes <- rownames(contr_chikv_rec)
+
+# Remoção de NAs na coluna de padj.
+contr_chikv_rec$padj[is.na(contr_chikv_rec$padj)] <- 1
+DEG_chikv <- subset(contr_chikv_rec, padj <= 0.05 & abs(log2FoldChange) > 1)
+write.csv(as.data.frame(chikv.DE), file = './DE/chikv/fgsea_DEG_chikv_CHIKV_vs_control.csv')
+head(DEG_chikv, 9)
+nrow(DEG_chikv)
+
+# Seleção dos genes DEs
+chikv.DE <- subset(DEG_chikv, padj <= 0.05 & abs(log2FoldChange) > 0.5)
+nrow(chikv.DE)
+head(chikv.DE, 15)
+# Abaixo um arquivo que pode servir como teste para GSEA/fgsea:
+write.csv(as.data.frame(chikv.DE), file = './DE/chikv/fgsea_chikvDE_subset_CHIKV_vs_control.csv')
+
+
+# Filtrando por log2FC
+DE_subset <- subset(chikv.DE, log2FoldChange >= 1.5 | log2FoldChange <= -1.5)
+head(DE_subset, 9)
+nrow(DE_subset)
+
+# Filtrando por padj
+DE_subset <- subset(DE_subset, padj <= 0.01)  # ou padj <= 0.05
+nrow(DE_subset)
+
+write.csv(DE_subset, file = './DE/chikv/DE_subset_chikv_rec_vs_control.csv')
+
+# Separando em genes up e down regulados
+DE_down <- subset(DE_subset, log2FoldChange <= -1.5)  # Downregulated genes
+length(DE_down$genes)
+head(DE_down, 16)
+
+# Tabela de contagem de genes 'downregulados'
+write.table(as.data.frame(DE_down), sep = ",", "./DE/chikv/transcript_count_CHIKV_rec_DOWN.txt", row.names = FALSE)
+write.csv(as.data.frame(DE_down), file = './DE/chikv/transcript_count_CHIKV_rec_DOWN.csv')
+
+DE_up <- subset(DE_subset, log2FoldChange >= 1.5)     # Upregulated genes
+length(DE_up$genes)
+head(DE_up, 16)
+
+# Tabela de contagem de genes 'upregulados'
+write.table(as.data.frame(DE_up), sep = ",", "./DE/chikv/transcript_count_CHKV_rec_UP.txt", row.names = FALSE)
+write.csv(as.data.frame(DE_up), file = './DE/chikv/transcript_count_CHKV_rec_UP.csv')
+
+
+###################################################################################################################
+
 ## Plot counts
 # É útil examinar a contagem de reads para um único gene entre os grupos (control e zika).
 # Existe a função plotCounts que pode fazer isso, a qual normaliza as contagens por profundidade
@@ -520,66 +579,6 @@ plotMA(resIHW, xlim=xlim, ylim=ylim, main="Febre Chikungunya vs Controles \n(IHW
 # Pode-se selecionar o gene de interesse a ser plotado por rowname ou por índice numérico.
 plotCounts(dds, gene=which.min(res$padj), intgroup="condition")
 plotCounts(dds, gene=which.min(res$log2FoldChange), intgroup="condition")
-
-# Ordenar os resultados da tabela por menor p value:
-resOrdered.2 <- res[order(res$log2FoldChange), ]
-resOrdered.2
-write.csv(as.data.frame(resOrdered), file = './tables/chikv/resOrdered/resOrdered-Log2FC_CHIKV_vs_control.csv')
-
-########################################### SELEÇÃO GENES UP e DOWN ###########################################
-contr_chikv_rec <- as.data.frame(res)
-write.csv(contr_chikv_rec, file = './DE/chikv/DE_chikv_rec_vs_control.csv')
-
-# 16. Criar uma nova coluna com os nomes (SYMBOLS) dos genes.
-contr_chikv_rec$genes <- rownames(contr_chikv_rec)
-
-# 17. Remoção de NAs na coluna de padj.
-contr_chikv_rec$padj[is.na(contr_chikv_rec$padj)] <- 1
-
-DEG_chikv <- subset(contr_chikv_rec, padj <= 0.05 & abs(log2FoldChange) > 1)
-head(DEG_chikv, 9)
-length(DEG_chikv$genes)
-
-#selecting only DEGs from each dataframe
-chikv.DE <- subset(DEG_chikv, padj <= 0.01 & abs(log2FoldChange) > 0.5)
-length(chikv.DE$genes)
-head(chikv.DE, 15)
-
-
-# Exemplo edgeR
-# Filtrando por log2FC
-DE_subset <- subset(DEG_chikv, log2FoldChange >= 1.5 | log2FoldChange <= -1.5)
-head(DE_subset, 9)
-nrow(DE_subset)
-length(DE_subset$genes)
-
-
-#aqui eu estou filtrando pelo  padj
-DE_subset <- subset(DE_subset, padj <= 0.01)
-nrow(DE_subset)
-
-#separando o dataset em genes up e down regulados
-DE_down <- subset(DE_subset, log2FoldChange <= -1.5)         # Downregulated genes
-length(DE_down$genes)
-head(DE_down, 16)
-
-
-DE_up <- subset(DE_subset, log2FoldChange >= 1.5)            # Upregulated genes
-length(DE_up$genes)
-head(DE_up, 16)
-
-
-## Transformar cada um numa tabela para 
-## aproveitar melhor a lista de dados.
-
-# Tabela de contagem de genes 'upregulados'
-write.table(as.data.frame(DE_up), sep = ",", "./DE/chikv/transcript_count_CHKV_rec_UP.txt", row.names = F)
-write.csv(as.data.frame(DE_up), file = './DE/chikv/transcript_count_CHKV_rec_UP.csv')
-
-# Tabela de contagem de genes 'downregulados'
-write.table(as.data.frame(DE_down), sep = ",", "./DE/chikv/transcript_count_CHIKV_REC_DOWN.txt", row.names = F)
-write.csv(as.data.frame(DE_up), file = './DE/chikv/transcript_count_CHIKV_REC_DOWN.csv')
-###################################################################################################################
 
 # Customização com ggplot2
 # Neste caso
@@ -681,6 +680,162 @@ write.csv(as.data.frame(resSig), file = './tables/zika/resOrdered/resSig_0_025_z
 
 
 ###### Parte VI
+## Transformação e Visualização de Dados
+# Transformações de contagem
+
+# VST - Variance Stabilizing Transformation 
+vsd <- vst(dds, blind=FALSE)
+head(assay(vsd), 3)
+# Os valores transformados não são contagens, sendo armazenados no slot assay.
+# colData está ligado a dds e é acessível:
+colData(vsd)
+
+# RLD - Regularized log Transformation 
+rld <- rlog(dds, blind=FALSE)
+head(assay(rld), 6)
+# Os valores transformados não são contagens, sendo armazenados no slot assay.
+# colData está ligado a dds e é acessível:
+colData(rld)
+
+## Efeitos das Transformações na Variância
+# Plot de desvio padrão dos dados transformados através das amostras,
+# contra a média, usando shifting logarithm transformation
+# fornece log2(n + 1)
+ntd <- normTransform(dds)
+
+## library(vsn)
+# 1. Objeto ntd
+meanSdPlot(assay(ntd))
+
+# 2. Objeto vsd
+meanSdPlot(assay(vsd))
+
+# 3. Objeto rld
+meanSdPlot(assay(rld))
+
+
+## Qualidade de Dados por Clusterização e Visualização
+# Heatmap da matriz de contagem 
+
+#library(pheatmap)
+# 1. Select
+select <- order(rowMeans(counts(dds,normalized = TRUE)),
+                decreasing = TRUE)[1:20]
+# 2. Utilizando variável condition e replicates
+df <- as.data.frame(colData(dds)[,c("condition","replicate")])  # Todas as linhas (genes) e variáveis (colunas condition e replicate)
+# 3. Pheatmap (condição e suas replicatas)
+pheatmap(assay(ntd)[select,], cluster_rows = FALSE, show_rownames = FALSE,
+         cluster_cols = FALSE, annotation_col = df)
+
+
+# Utilizando variável condition e pop
+df2 <- as.data.frame(colData(dds)[,c("condition","pop")])
+pheatmap(assay(ntd)[select,], cluster_rows = FALSE, show_rownames = FALSE,
+         cluster_cols = FALSE, annotation_col = df2)
+
+
+## VST - Variance Stabilizing Transformation 
+# vsd - condition, replicate (df)
+pheatmap(assay(vsd)[select,], cluster_rows=FALSE, show_rownames=FALSE,
+         cluster_cols=FALSE, annotation_col=df)
+
+# vsd - condition, pop (df2)
+pheatmap(assay(vsd)[select,], cluster_rows=FALSE, show_rownames=FALSE,
+         cluster_cols=FALSE, annotation_col=df2)
+
+## RLD - Regularized log Transformation 
+# rld - condition, replicate (df)
+pheatmap(assay(rld)[select,], cluster_rows=FALSE, show_rownames=FALSE,
+         cluster_cols=FALSE, annotation_col=df)
+
+# rld - condition, pop (df2)
+pheatmap(assay(rld)[select,], cluster_rows=FALSE, show_rownames=FALSE,
+         cluster_cols=FALSE, annotation_col=df2)
+
+
+### Heatmap das Distâncias Amostra-Amostra
+# O utro uso de dados transformados: sample clustering.
+# Usando a função dist para transposição de matriz de contagem transformada.
+sampleDists <- dist(t(assay(vsd)))
+
+# library(RColorBrewer)
+sampleDistMatrix <- as.matrix(sampleDists)
+rownames(sampleDistMatrix) <- paste(vsd$condition, vsd$run, sep=" - ")
+colnames(sampleDistMatrix) <- NULL
+colors <- colorRampPalette( rev(brewer.pal(9, "Reds")) )(255)
+pheatmap(sampleDistMatrix,
+         clustering_distance_rows=sampleDists,
+         clustering_distance_cols=sampleDists,
+         col=colors)
+
+sampleDists <- dist(t(assay(rld)))
+
+# library(RColorBrewer)
+sampleDistMatrix <- as.matrix(sampleDists)
+rownames(sampleDistMatrix) <- paste(rld$condition, rld$run, sep=" - ")
+colnames(sampleDistMatrix) <- NULL
+colors <- colorRampPalette( rev(brewer.pal(9, "Reds")) )(255)
+pheatmap(sampleDistMatrix,
+         clustering_distance_rows=sampleDists,
+         clustering_distance_cols=sampleDists,
+         col=colors)
+
+
+### PCA - Principal component plot das amostras
+# O plot PCA está relacionado à matriz de distância e evidencia as amostras no plano de 2D
+# abrangidas por seus primeiros componentes principais.
+# Esse gráfico é útil para visualizar o efeito geral de covariantes experimentais (e batch effects).
+
+## Usando VST
+# vsd object
+plotPCA(vsd, intgroup=c("condition", "replicate"))
+
+## Usando RLT
+# rld object
+plotPCA(rld, intgroup=c("condition", "run"))
+
+# rld
+plotPCA(rld, intgroup=c("condition", "replicate"))
+
+plotPCA(rld, 
+        intgroup=c("condition", "replicate"),
+        returnData = TRUE)
+
+
+# Outra forma: res <-
+pcaVSD <- plotPCA(vsd, 
+                  ntop = nrow(counts(dds)),
+                  returnData=FALSE)
+
+pcaVSD
+
+pcaRLD <- plotPCA(rld, 
+                  ntop = nrow(counts(dds)),
+                  intgroup=c("condition", "replicate"),
+                  returnData=FALSE)
+pcaRLD
+
+
+pcaRLD2 <- plotPCA(rld, 
+                   ntop = nrow(counts(dds)),
+                   returnData=FALSE)
+
+pcaRLD2
+
+pcaRLD3 <- plotPCA(rld, 
+                   ntop = nrow(counts(dds)),
+                   intgroup=c("condition", "replicate"),
+                   returnData=FALSE)
+pcaRLD3
+
+# PCA sob TRUE
+plotPCA(rld, 
+        ntop = nrow(counts(dds)),
+        intgroup=c("condition", "replicate"),
+        returnData=TRUE)
+
+
+
 
 
 
