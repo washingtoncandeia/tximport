@@ -4,7 +4,7 @@
 # alpha = 0.05 (FDR, padj < 0.05)
 # Wald test p-value: condition chikv vs control
 # Wald test p-value: condition chikv_rec vs control
-# Data: 05/01/2020
+# Data: 04/01/2020
 ##---------------------------------------------
 library(tximport)
 library(apeglm)
@@ -20,10 +20,6 @@ library(RColorBrewer)
 library(PoiClaClu)
 library(genefilter)
 
-## Parte 1 - Preparação de dados das amostras de kallisto.
-# Caminho dos arquivos (fele path)
-dir <- './results'
-list.files(dir)
 ## Parte 1 - Preparação de dados das amostras de kallisto.
 # Caminho dos arquivos (fele path)
 dir <- './results'
@@ -316,8 +312,10 @@ samples$condition
 
 # Nomeando as linhas com nome de cada arquivo de amostra:
 rownames(samples) <- samples$run
-
 samples
+
+# Relevel: ajustando a condição referência para análise
+samples$condition <- relevel(samples$condition, ref = 'control')
 
 # Obtendo cada arquivo de replicata das amostras usadas em kallisto:
 files <- file.path(dir, samples$run, 'abundance.h5')
@@ -419,7 +417,7 @@ summary(res)
 # Informações de metadados do objeto res: colunas.
 mcols(res, use.names=TRUE)
 
-# Salvar .csv Wald test p-value: condition chikv/chikv_rec vs control em .csv para fgsea
+# Salvar .csv Wald test p-value: condition gbs/gbs_rec vs control em .csv para fgsea
 write.csv(as.data.frame(res), file = './GSEA/chikv/fgsea_condition_CHIKV_vs_control.csv')
 
 ## Reordenando Resultados com p-values e adjusted p-values
@@ -427,6 +425,7 @@ write.csv(as.data.frame(res), file = './GSEA/chikv/fgsea_condition_CHIKV_vs_cont
 resOrdered <- res[order(res$pvalue), ]
 resOrdered
 write.csv(as.data.frame(resOrdered), file = './tables/chikv/resOrdered/resOrdered_CHIKV_vs_control.csv')
+
 # Examinando as contagens e contagens normalizadas para os genes com menor p-value:
 idx <- which.min(res$pvalue)
 idx
@@ -678,6 +677,8 @@ write.csv(as.data.frame(resSig), file = './tables/zika/resOrdered/resSig_0_025_z
 
 
 ###### Parte VI
+
+###### Parte VI
 ## Transformação e Visualização de Dados
 # Transformações de contagem
 
@@ -789,8 +790,6 @@ pheatmap(sampleDistMatrix,
 plotPCA(vsd, intgroup=c("condition", "replicate"))
 
 ## Usando RLT
-# rld object
-plotPCA(rld, intgroup=c("condition", "run"))
 
 # rld
 plotPCA(rld, intgroup=c("condition", "replicate"))
@@ -820,57 +819,14 @@ pcaRLD2 <- plotPCA(rld,
 
 pcaRLD2
 
-pcaRLD3 <- plotPCA(rld, 
+pcaVSD2 <- plotPCA(vsd, 
                    ntop = nrow(counts(dds)),
                    intgroup=c("condition", "replicate"),
                    returnData=FALSE)
-pcaRLD3
+pcaVSD2
 
 # PCA sob TRUE
 plotPCA(rld, 
         ntop = nrow(counts(dds)),
         intgroup=c("condition", "replicate"),
         returnData=TRUE)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
