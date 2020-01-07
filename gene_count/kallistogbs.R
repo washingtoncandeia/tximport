@@ -4,12 +4,13 @@
 # alpha = 0.05 (FDR, padj < 0.05)
 # Wald test p-value: condition gbs vs control
 # Wald test p-value: condition gbs_rec vs control
-# Data: 06/01/2020
+# Data: 07/01/2020
 ##---------------------------------------------
 library(tximport)
+library(DESeq2)
 library(apeglm)
 library(biomaRt)
-library(DESeq2)
+library(org.Hs.eg.db)
 library(readr)
 library(dplyr)
 library(rhdf5)
@@ -19,6 +20,10 @@ library(pheatmap)
 library(RColorBrewer)
 library(PoiClaClu)
 library(genefilter)
+library(ensembldb)
+library(EnsDb.Hsapiens.v86)
+library(EnsDb.Hsapiens.v79)
+
 
 ## Parte 1 - Preparação de dados das amostras de kallisto.
 # Caminho dos arquivos (fele path)
@@ -287,24 +292,24 @@ names(samples_info)
 # Usando dplyr, função filter e negando com regex (função grepl)
 
 samples_info <- samples_info %>% 
-  filter(!grepl(CHIKV_REC, pop))
+  dplyr::filter(!grepl(CHIKV_REC, pop))
 
 samples_info <- samples_info %>% 
-  filter(!grepl(CHIKV, pop))
+  dplyr::filter(!grepl(CHIKV, pop))
 
 samples_info <- samples_info %>% 
-  filter(!grepl(ZIKA, pop))
+  dplyr::filter(!grepl(ZIKA, pop))
 
 samples_info
 
 ## ------------------------------------------------------------------------------------ ##
 length(samples_info$condition)
 # Salvar a tabela no formato .txt (tsv)
-write.table(samples_info, './tables/gbs/condition_gbs_gbs_rec_vs_control.txt', sep = '\t')
+write.table(samples_info, './tables/gbs/condition_gbs_all_vs_control.txt', sep = '\t')
 
 # Criar um vetor nomeado apontando os arquivos de quantificação.
 # Estes arquivos têm seus nomes anotados em uma tabela (samples.txt).
-samples <- read.table('./tables/gbs/condition_gbs_gbs_rec_vs_control.txt', header = TRUE, row.names = 1)
+samples <- read.table('./tables/gbs/condition_gbs_all_vs_control.txt', header = TRUE, row.names = 1)
 head(samples, 9)
 samples$condition 
 
@@ -323,6 +328,33 @@ names(files) <- samples$run
 files
 length(files)
 
+
+# Usando EnsDb.Hsapiens.v86 ou 79 / ensembldb
+# EnsDB.Hsapiens.v86
+# EX: https://support.bioconductor.org/p/81012/
+edb <- EnsDb.Hsapiens.v86
+edb79 <- EnsDb.Hsapiens.v79
+
+edb
+edb79
+
+txdf <- transcripts(edb, 
+                    columns = c(listColumns(edb , "tx"), "gene_name"), 
+                    return.type="DataFrame")
+
+tx2gene <- as.data.frame(txdf[,c("tx_id","gene_id")])
+head(tx2gene, 10)
+nrow(tx2gene)
+
+write.csv(as.data.frame(tx2gene), file = './transcritos/zika/ensembl.csv')
+
+# Versão EnsDb.Hsapiens.v79:
+txdf79 <- transcripts(EnsDb.Hsapiens.v79, return.type="DataFrame")
+
+tx2gene79 <- as.data.frame(txdf[,c("tx_id", "gene_id")])
+head(tx2gene79, 10)
+nrow(txdf79)
+
 ## Usando biomaRt para nomear transcritos e genes
 mart <- biomaRt::useMart(biomart = "ensembl", 
                          dataset = "hsapiens_gene_ensembl", 
@@ -339,6 +371,8 @@ t2g <- dplyr::rename(t2g, target_id = ensembl_transcript_id,
 
 
 head(t2g, 9)
+nrow(t2g)
+
 ## Obs.: A coluna de transcripts IDs não possui versão.
 ## Ao utilizar o tximport prestar atenção na opção ignoreTxVersion.
 
@@ -351,13 +385,15 @@ head(t2g, 9)
 txi.kallisto <- tximport(files, 
                          type = 'kallisto',
                          tx2gene = t2g,
-                         ignoreTxVersion = TRUE,
-                         ignoreAfterBar = TRUE)
+                         ignoreTxVersion = TRUE)
 
-
+# ignoreTxVersion = TRUE deve ser utilizado quando em gene counts analysis.
 # Observações gerais
 names(txi.kallisto)
 head(txi.kallisto$abundance)
+head(txi.kallisto$counts)
+head(txi.kallisto$length)
+head(txi.kallisto$infReps)
 
 # Salvamento de um objeto R para uso posterior:
 #dir.create(path = "./count_estimates/")
@@ -394,8 +430,6 @@ head(dds, 9)
 # Outra forma:
 #dds <- dds.txi[rowSums(counts(dds.txi)) >= 10, ]
 
-head(dds$condition, 9)
-
 # Observar o design
 design(dds)
 
@@ -421,24 +455,11 @@ summary(res)
 # Informações de metadados do objeto res: colunas.
 mcols(res, use.names=TRUE)
 
-# Salvar .csv Wald test p-value: condition gbs/gbs_rec vs control em .csv para fgsea
-write.csv(as.data.frame(res), file = './GSEA/gbs/condition_gbs_vs_control.csv')
-
-# Informações de metadados do objeto res: colunas.
-mcols(res, use.names=TRUE)
-
 ## Reordenando Resultados com p-values e adjusted p-values
 # Ordenar os resultados da tabela por menor p value:
 resOrdered <- res[order(res$pvalue), ]
 resOrdered
-write.csv(as.data.frame(resOrdered), file = './tables/gbs/resOrdered/resOrdered_gbs_rec_vs_control.csv')
-
-# Examinando as contagens e contagens normalizadas para os genes com menor p-value:
-idx <- which.min(res$pvalue)
-counts(dds)[idx, ]
-
-#Normalization
-counts(dds, normalized=TRUE)[ idx, ]
+write.csv(as.data.frame(resOrdered), file = './tables/chikv/resOrdered/resOrdered_CHIKV_vs_control.csv')
 
 # Examinando as contagens e contagens normalizadas para os genes com menor p-value:
 idx <- which.min(res$pvalue)
@@ -458,27 +479,6 @@ resultsNames(dds)
 # coef = 2 ("condition_chikv_vs_control")
 # coef = 3 ("condition_chikv_rec_vs_control") 
 
-### LFC - Log2 Fold Changes Shrinkage
-## Visualizando para log2 fold changes shrinkage, LFC (Shrinkage of Effect Size)
-# associado com mudanças log2 fold changes advindas de baixas contagens de genes
-# sem requerimento de thresholds de filtragem arbitrários.
-# Para contrair (shrink) LFC passar objeto dds para função lfcShrink:
-resLFC <- lfcShrink(dds, coef = 'condition_gbs_vs_control', type = 'apeglm')  # coef = 3
-
-# Observar
-resLFC
-# Summary
-summary(resLFC)
-
-# FDR cutoff, alpha = 0.05.
-res05 <- results(dds, alpha=0.05)
-summary(res05)
-
-### Independent Hypothesis Weighting
-## Ponderação de Hipóteses Independentes
-# Filtragem de p value: ponderar (weight) hipóteses para otimizar o poder.
-# Está disponível no Bioconductor sob nome IHW.
-resIHW <- results(dds, filterFun = ihw)
 ### LFC - Log2 Fold Changes Shrinkage
 ## Visualizando para log2 fold changes shrinkage, LFC (Shrinkage of Effect Size)
 # Para contrair (shrink) LFC passar objeto dds para função lfcShrink:
@@ -508,70 +508,6 @@ summary(resIHW)
 # Summary
 summary(resLFC)
 
-
-# Outras comparações:
-# Usar argumento 'contrast = ' na função results(); 
-# Especificar 3 valores como parâmetros: o nome da variável (coluna $condition); level numerador (gbs); level denominador (control).
-# Cada objeto abaixo é um objeto "res" modificado para a análise que interessar:
-res2gbs <- results(dds, contrast = c("condition", "gbs", "control")) # == res
-res2gbs_rec <- results(dds, contrast = c("condition", "gbs_rec", "control"))
-res2gbsall <- results(dds, contrast = c("condition", "gbs_rec", "gbs"))
-
-res
-res2gbs
-res2gbs_rec
-res2gbsall
-
-####------------------- Criar .CSV (pode ser usado em fgsea) -------------------####
-# Salvar .csv Wald test p-value: condition gbs/gbs_rec vs control em .csv para fgsea
-# Abaixo .csv já criado na linha 444 deste código:
-write.csv(as.data.frame(res), file = './GSEA/gbs/condition_gbs_vs_control.csv')
-write.csv(as.data.frame(res2gbs), file = './GSEA/gbs/condition_gbs_vs_control.csv')
-contrGBSvsCONTROL <- as.data.frame(res2gbs)
-write.csv(contrGBSvsCONTROL, file = './GSEA/gbs/condition_gbs_vs_control.csv')
-
-
-# Formas alternativas de arquivos .csv para fgsea:
-# Outra forma .csv para fgsea (gbs rec):
-contrGBSrecvsCONTROL <- as.data.frame(results(dds, contrast=c('condition','gbs_rec','control')))
-write.csv(contrGBSrecvsCONTROL, file = './GSEA/gbs/condition_gbs_Rec_vs_control.csv')
-
-# Ou:
-res2gbs_rec <- results(dds, contrast = c("condition", "gbs_rec", "control"))
-write.csv(as.data.frame(res2gbs_rec), file = './GSEA/gbs/condition_gbs_Rec_vs_control.csv')
-
-
-### Análise Alternativa de Genes DE com cutoff pdaj <= 0.05 para genes DE ###
-# Observe que isto é uma forma alternativa se o cutoff não tiver sido feito em:
-# res <- results(dds, alpha=0.05)
-# https://github.com/washingtoncandeia/DESeq_IMT/blob/master/codes_DESeq2/1_GBSrecuperadosVsZika.R
-
-
-# Criar uma nova coluna com os nomes (SYMBOLS) dos genes.
-contrGBSvsCONTROL$genes <- rownames(contrGBSvsCONTROL)
-
-# Remoção de NAs na coluna de padj.
-contrGBSvsCONTROL$padj[is.na(contrGBSvsCONTROL$padj)] <- 1
-
-DEGscontrGBSvsCONTROL <- subset(contrGBSvsCONTROL, padj <= 0.05 & abs(log2FoldChange) > 1)
-
-
-#Volcanoplot
-with(as.data.frame(contrGBSvsCONTROL[!(-log10(contrGBSvsCONTROL$padj) == 0), ]), plot(log2FoldChange,-log10(padj), pch=16, axes=T,
-                                        xlim = c(-6,6), ylim = c(0,4),                                    
-                                        xlab = NA, ylab = "-Log10(Pvalue-Adjusted)", main = "Guillain-Barré vs Grupo Controle"
-                                                                            
-)
-)
-
-with(subset(subset(as.data.frame(contr_RECzika), padj <= 0.05), log2FoldChange <= -1), points(log2FoldChange,-log10(padj), pch=21, col="black",bg = "#69B1B7"))
-with(subset(subset(as.data.frame(contr_RECzika), padj <= 0.05), log2FoldChange >= 1), points(log2FoldChange,-log10(padj),pch=21, col="black",bg = "tomato3"))
-abline(h=1.3,col="green", lty = 2, cex= 3)
-abline(v=1,col="green", lty = 2, cex= 3)
-abline(v=-1,col="green", lty = 2, cex= 3)
-
-####------------------------------------------------------------------------------####
-
 ## Continuação:
 ## Log fold change shrinkage for visualization and ranking
 # Contração log fod change para visualização e ranqueamento.
@@ -582,26 +518,15 @@ resultsNames(dds)
 # coef = 1 ("condition_gbs_vs_control")     
 # coef = 2 ("condition_gbs_rec_vs_control")
 
-
 ##### Parte V - Exploração de Resultados
 ## MA-plot
-
-## Lembrar dos objetos:
-# res
-# res05 (padj < 0.05)
-# resOrdered
-# resLFC
-# resIHW
 
 # A função plotMA mostra os log2 fold change atribuível a uma dada variável
 # sobre a média de contagens normalizadas para todas as amostras no DESeqDataSet.
 plotMA(res , ylim = c(-2, 2))
 
 # Objeto com alpha < 0.05 (adjusted p-value < 0.1)
-plotMA(res05, ylim = c(-2, 2))
-
-# Objeto reOrdenado
-plotMA(resOrdered, ylim = c(-2, 2))
+plotMA(res025, ylim = c(-2, 2))
 
 # Objeto resLFC
 plotMA(resLFC, ylim = c(-2, 2))
@@ -610,25 +535,21 @@ plotMA(resLFC, ylim = c(-2, 2))
 plotMA(resIHW, ylim = c(-2, 2))
 
 # Agora, observar os plots juntos
-# Versão 1
+# Versão 1: ma_all_v1.jpeg
 par(mfrow=c(2,3), mar=c(4,4,4,2))
 xlim <- c(1,1e5); ylim <- c(-3,3)
-plotMA(res, xlim=xlim, ylim=ylim, main="GBS, GBS rec vs Control \n(pdaj < 0.1)")
-plotMA(resOrdered, xlim=xlim, ylim=ylim, main="Guillain-Barré Rec vs Control \n(Reordenado por menor pvalue)")
-plotMA(resLFC, xlim=xlim, ylim=ylim, main="Zika, GBS, GBS rec vs Control \n(LFC)")
-plotMA(resIHW, xlim=xlim, ylim=ylim, main="Zika, GBS, GBS rec vs Control \n(IHW)")
-plotMA(res05, xlim=xlim, ylim=ylim, main="Zika, GBS, GBS rec vs Control \n(padj < 0.05)")
+plotMA(res, xlim=xlim, ylim=ylim, main="Febre Chikungunya vs Controles \n(pdaj < 0.05)")
+plotMA(resLFC, xlim=xlim, ylim=ylim, main="Febre Chikungunya vs Controles \n(LFC)")
+plotMA(resIHW, xlim=xlim, ylim=ylim, main="Febre Chikungunya vs Controles \n(IHW)")
+plotMA(res025, xlim=xlim, ylim=ylim, main="Febre Chikungunya vs Controles \n(padj < 0.025)")
+# Pontos em vermelho: se o adjusted p value for menor que 0.1.
 
-# Versão 2
 par(mfrow=c(2,2), mar=c(4,4,4,2))
 xlim <- c(1,1e5); ylim <- c(-3,3)
-plotMA(res, xlim=xlim, ylim=ylim, main="Zika, GBS, GBS rec vs Control \n(pdaj < 0.1)")
-plotMA(resOrdered, xlim=xlim, ylim=ylim, main="uillain-Barré Rec vs Control \n(Reordenado por menor pvalue)")
-plotMA(resLFC, xlim=xlim, ylim=ylim, main="Zika, GBS, GBS rec vs Control \n(LFC)")
-plotMA(res05, xlim=xlim, ylim=ylim, main="Zika, GBS, GBS rec vs Control \n(padj < 0.05)")
-plotMA(resIHW, xlim=xlim, ylim=ylim, main="Zika, GBS, GBS rec vs Control \n(IHW)")
-
-
+plotMA(res, xlim=xlim, ylim=ylim, main="Febre Chikungunya vs Controles \n(pdaj < 0.05)")
+plotMA(resLFC, xlim=xlim, ylim=ylim, main="Febre Chikungunya vs Controles \n(LFC)")
+plotMA(res025, xlim=xlim, ylim=ylim, main="Febre Chikungunya vs Controles \n(padj < 0.025)")
+plotMA(resIHW, xlim=xlim, ylim=ylim, main="Febre Chikungunya vs Controles \n(IHW)")
 
 # Pontos em vermelho: se o adjusted p value for menor que 0.1.
 
@@ -904,39 +825,6 @@ ggplot(pcaData, aes(PC1, PC2, color=condition, shape=replicate)) +
   coord_fixed()
 
 
-############ Extrair os resultados da análise de DE para .CSV ############
-# Análise de Expressão Diferencial (DE)
-# Relembrar o Objeto dds por DESeq2
-# dds <- DESeq(dds)
-
-# A função results gera tabelas de resultados.
-# condition chikv rec vs control 
-res <- results(dds)
-res
-# Salvar .csv Wald test p-value: condition chikv_rec vs control (fgsea)
-write.csv(as.data.frame(res), file = './GSEA/gbs/condition_gbs_rec_vs_control_GSEA.csv')
-
-# A forma alternativa de se fazer condition chikv_rec vs control 
-resChikrec <- results(dds, contrast=c('condition','gbs_rec','control'))
-resChikrec <- as.data.frame(resChikrec)
-resChikrec
-write.csv(resChikrec, file = './GSEA/chikv/condition_gbs_rec_vs_control_alt_GSEA.csv')
-
-# Alternativa 1: condition chikv vs control
-resChikdis <- results(dds, contrast=c('condition','gbs_rec','control'))
-resChikdis
-
-# Alternativa 2: condition chikv vs chikv_rec
-resChikvChikv <- results(dds, contrast=c('condition','gbs','gbs_rec'))
-resChikvChikv
-
-# Criar csv para os contrastes acima (pode ser usado em fgsea)
-write.csv(as.data.frame(res), file = './GSEA/gbs/condition_gbs_rec_vs_control_GSEA.csv')              # Coeficiente 3
-write.csv(as.data.frame(resChikrec), file = './GSEA/gbs/condition_gbsrec_vs_control_alt_GSEA.csv')   # Coeficiente 3
-write.csv(as.data.frame(resChikdis), file = './GSEA/gbs/condition_gbs_rec_vs_control_GSEA.csv')   # Coeficiente 2
-#write.csv(as.data.frame(resChikvChikv), file = './GSEA/chikv/condition_chikv_rec_chikv_doentes_GSEA.csv')
-
-
 ## Reordenando Resultados com p-values e adjusted p-values
 # Ordenar os resultados da tabela por menor p value:
 resOrdered <- res[order(res$pvalue), ]
@@ -953,3 +841,54 @@ write.csv(as.data.frame(res05), file = './GSEA/gbs/condition_gbs_rec_vs_control_
 # resLFC
 # resNorm
 # resAsh
+
+########################################### SELEÇÃO GENES UP e DOWN ###########################################
+contr_chikv_rec <- as.data.frame(res)
+
+# Criar uma nova coluna com os nomes (SYMBOLS) dos genes.
+contr_chikv_rec$genes <- rownames(contr_chikv_rec)
+
+# Remoção de NAs na coluna de padj.
+contr_chikv_rec$padj[is.na(contr_chikv_rec$padj)] <- 1
+DEG_chikv <- subset(contr_chikv_rec, padj <= 0.05 & abs(log2FoldChange) > 1)
+write.csv(as.data.frame(chikv.DE), file = './DE/chikv/fgsea_DEG_chikv_CHIKV_vs_control.csv')
+head(DEG_chikv, 9)
+nrow(DEG_chikv)
+
+# Seleção dos genes DEs
+chikv.DE <- subset(DEG_chikv, padj <= 0.05 & abs(log2FoldChange) > 0.5)
+nrow(chikv.DE)
+head(chikv.DE, 15)
+# Abaixo um arquivo que pode servir como teste para GSEA/fgsea:
+write.csv(as.data.frame(chikv.DE), file = './DE/chikv/fgsea_chikvDE_subset_CHIKV_vs_control.csv')
+
+
+# Filtrando por log2FC
+DE_subset <- subset(chikv.DE, log2FoldChange >= 1.5 | log2FoldChange <= -1.5)
+head(DE_subset, 9)
+nrow(DE_subset)
+
+# Filtrando por padj
+DE_subset <- subset(DE_subset, padj <= 0.01)  # ou padj <= 0.05
+nrow(DE_subset)
+
+write.csv(DE_subset, file = './DE/chikv/DE_subset_chikv_rec_vs_control.csv')
+
+# Separando em genes up e down regulados
+DE_down <- subset(DE_subset, log2FoldChange <= -1.5)  # Downregulated genes
+length(DE_down$genes)
+head(DE_down, 16)
+
+# Tabela de contagem de genes 'downregulados'
+write.table(as.data.frame(DE_down), sep = ",", "./DE/chikv/transcript_count_CHIKV_rec_DOWN.txt", row.names = FALSE)
+write.csv(as.data.frame(DE_down), file = './DE/chikv/transcript_count_CHIKV_rec_DOWN.csv')
+
+DE_up <- subset(DE_subset, log2FoldChange >= 1.5)     # Upregulated genes
+length(DE_up$genes)
+head(DE_up, 16)
+
+# Tabela de contagem de genes 'upregulados'
+write.table(as.data.frame(DE_up), sep = ",", "./DE/chikv/transcript_count_CHKV_rec_UP.txt", row.names = FALSE)
+write.csv(as.data.frame(DE_up), file = './DE/chikv/transcript_count_CHKV_rec_UP.csv')
+
+###################################################################################################################
