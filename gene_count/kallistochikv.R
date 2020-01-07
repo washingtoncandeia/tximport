@@ -3,7 +3,6 @@
 # Utilizando Octuplicatas
 # alpha = 0.05 (FDR, padj < 0.05)
 # Wald test p-value: condition chikv vs control
-# Wald test p-value: condition chikv_rec vs control
 # Data: 07/01/2020
 ##---------------------------------------------
 library(tximport)
@@ -403,7 +402,7 @@ dds <- DESeq(dds)
 
 # A função results gera tabelas de resultados.
 # condition chikv rec vs control 
-res <- results(dds, alpha = 0.05)
+res <- results(dds, contrast = c('condition', 'chikv', 'control'), alpha = 0.05)
 
 # Note que podemos especificar o coeficiente ou contraste 
 # que queremos construir como uma tabela de resultados, usando:
