@@ -24,7 +24,6 @@ library(ensembldb)
 library(EnsDb.Hsapiens.v86)
 library(EnsDb.Hsapiens.v79)
 
-
 ## Parte 1 - Preparação de dados das amostras de kallisto.
 # Caminho dos arquivos (fele path)
 dir <- './results'
@@ -305,11 +304,11 @@ samples_info
 ## ------------------------------------------------------------------------------------ ##
 length(samples_info$condition)
 # Salvar a tabela no formato .txt (tsv)
-write.table(samples_info, './tables/gbs/condition_gbs_all_vs_control.txt', sep = '\t')
+write.table(samples_info, './tables/gbs/condition_gbs_vs_control.txt', sep = '\t')
 
 # Criar um vetor nomeado apontando os arquivos de quantificação.
 # Estes arquivos têm seus nomes anotados em uma tabela (samples.txt).
-samples <- read.table('./tables/gbs/condition_gbs_all_vs_control.txt', header = TRUE, row.names = 1)
+samples <- read.table('./tables/gbs/condition_gbs_vs_control.txt', header = TRUE, row.names = 1)
 head(samples, 9)
 samples$condition 
 
@@ -327,7 +326,6 @@ files
 names(files) <- samples$run
 files
 length(files)
-
 
 # Usando EnsDb.Hsapiens.v86 ou 79 / ensembldb
 # EnsDB.Hsapiens.v86
@@ -445,7 +443,7 @@ res <- results(dds, alpha = 0.05)
 
 # Note que podemos especificar o coeficiente ou contraste 
 # que queremos construir como uma tabela de resultados, usando:
-#res <- results(dds, contrast = c('condition', 'control', 'chikv'))
+#res <- results(dds, contrast = c('condition', 'control', 'gbs'))
 
 # Visualizar
 res
@@ -550,6 +548,17 @@ plotMA(res, xlim=xlim, ylim=ylim, main="Febre Chikungunya vs Controles \n(pdaj <
 plotMA(resLFC, xlim=xlim, ylim=ylim, main="Febre Chikungunya vs Controles \n(LFC)")
 plotMA(res025, xlim=xlim, ylim=ylim, main="Febre Chikungunya vs Controles \n(padj < 0.025)")
 plotMA(resIHW, xlim=xlim, ylim=ylim, main="Febre Chikungunya vs Controles \n(IHW)")
+
+# Pontos em vermelho: se o adjusted p value for menor que 0.1.
+
+# Versão 2
+par(mfrow=c(2,2), mar=c(4,4,4,2))
+xlim <- c(1,1e5); ylim <- c(-3,3)
+plotMA(res, xlim=xlim, ylim=ylim, main="Zika, GBS, GBS rec vs Control \n(pdaj < 0.1)")
+plotMA(resOrdered, xlim=xlim, ylim=ylim, main="uillain-Barré Rec vs Control \n(Reordenado por menor pvalue)")
+plotMA(resLFC, xlim=xlim, ylim=ylim, main="Zika, GBS, GBS rec vs Control \n(LFC)")
+plotMA(res05, xlim=xlim, ylim=ylim, main="Zika, GBS, GBS rec vs Control \n(padj < 0.05)")
+plotMA(resIHW, xlim=xlim, ylim=ylim, main="Zika, GBS, GBS rec vs Control \n(IHW)")
 
 # Pontos em vermelho: se o adjusted p value for menor que 0.1.
 
