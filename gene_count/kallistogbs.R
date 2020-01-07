@@ -3,7 +3,6 @@
 # Utilizando Octuplicatas
 # alpha = 0.05 (FDR, padj < 0.05)
 # Wald test p-value: condition gbs vs control
-# Wald test p-value: condition gbs_rec vs control
 # Data: 07/01/2020
 ##---------------------------------------------
 library(tximport)
@@ -439,11 +438,7 @@ dds <- DESeq(dds)
 
 # A função results gera tabelas de resultados.
 # condition chikv rec vs control 
-res <- results(dds, alpha = 0.05)
-
-# Note que podemos especificar o coeficiente ou contraste 
-# que queremos construir como uma tabela de resultados, usando:
-#res <- results(dds, contrast = c('condition', 'control', 'gbs'))
+res <- results(dds, contrast = c('condition', 'gbs', 'control'), alpha = 0.05)
 
 # Visualizar
 res
@@ -453,11 +448,14 @@ summary(res)
 # Informações de metadados do objeto res: colunas.
 mcols(res, use.names=TRUE)
 
+# Salvar .csv Wald test p-value: condition gbs/gbs_rec vs control em .csv para fgsea
+write.csv(as.data.frame(res), file = './GSEA/chikv/fgsea_condition_gbs_vs_control.csv')
+
 ## Reordenando Resultados com p-values e adjusted p-values
 # Ordenar os resultados da tabela por menor p value:
 resOrdered <- res[order(res$pvalue), ]
 resOrdered
-write.csv(as.data.frame(resOrdered), file = './tables/chikv/resOrdered/resOrdered_CHIKV_vs_control.csv')
+write.csv(as.data.frame(resOrdered), file = './tables/gbs/resOrdered/resOrdered_gbs_vs_control.csv')
 
 # Examinando as contagens e contagens normalizadas para os genes com menor p-value:
 idx <- which.min(res$pvalue)
@@ -488,7 +486,7 @@ resLFC
 summary(resLFC)
 
 # FDR cutoff, alpha = 0.05.
-res025 <- results(dds, alpha=0.025)
+res001 <- results(dds, alpha=0.01)
 summary(res025)
 
 ### Independent Hypothesis Weighting
@@ -536,29 +534,29 @@ plotMA(resIHW, ylim = c(-2, 2))
 # Versão 1: ma_all_v1.jpeg
 par(mfrow=c(2,3), mar=c(4,4,4,2))
 xlim <- c(1,1e5); ylim <- c(-3,3)
-plotMA(res, xlim=xlim, ylim=ylim, main="Febre Chikungunya vs Controles \n(pdaj < 0.05)")
-plotMA(resLFC, xlim=xlim, ylim=ylim, main="Febre Chikungunya vs Controles \n(LFC)")
-plotMA(resIHW, xlim=xlim, ylim=ylim, main="Febre Chikungunya vs Controles \n(IHW)")
-plotMA(res025, xlim=xlim, ylim=ylim, main="Febre Chikungunya vs Controles \n(padj < 0.025)")
+plotMA(res, xlim=xlim, ylim=ylim, main="Síndrome de Guillain-Barré vs Controles \n(pdaj < 0.05)")
+plotMA(resLFC, xlim=xlim, ylim=ylim, main="Síndrome de Guillain-Barré vs Controles \n(LFC)")
+plotMA(resIHW, xlim=xlim, ylim=ylim, main="Síndrome de Guillain-Barré vs Controles \n(IHW)")
+plotMA(res025, xlim=xlim, ylim=ylim, main="Síndrome de Guillain-Barré vs Controles \n(padj < 0.01)")
 # Pontos em vermelho: se o adjusted p value for menor que 0.1.
 
 par(mfrow=c(2,2), mar=c(4,4,4,2))
 xlim <- c(1,1e5); ylim <- c(-3,3)
-plotMA(res, xlim=xlim, ylim=ylim, main="Febre Chikungunya vs Controles \n(pdaj < 0.05)")
-plotMA(resLFC, xlim=xlim, ylim=ylim, main="Febre Chikungunya vs Controles \n(LFC)")
-plotMA(res025, xlim=xlim, ylim=ylim, main="Febre Chikungunya vs Controles \n(padj < 0.025)")
-plotMA(resIHW, xlim=xlim, ylim=ylim, main="Febre Chikungunya vs Controles \n(IHW)")
+plotMA(res, xlim=xlim, ylim=ylim, main="Síndrome de Guillain-Barré vs Controles \n(pdaj < 0.05)")
+plotMA(resLFC, xlim=xlim, ylim=ylim, main="Síndrome de Guillain-Barré vs Controles \n(LFC)")
+plotMA(res025, xlim=xlim, ylim=ylim, main="Síndrome de Guillain-Barré vs Controles \n(padj < 0.01)")
+plotMA(resIHW, xlim=xlim, ylim=ylim, main="Síndrome de Guillain-Barré vs Controles \n(IHW)")
 
 # Pontos em vermelho: se o adjusted p value for menor que 0.1.
 
 # Versão 2
 par(mfrow=c(2,2), mar=c(4,4,4,2))
 xlim <- c(1,1e5); ylim <- c(-3,3)
-plotMA(res, xlim=xlim, ylim=ylim, main="Zika, GBS, GBS rec vs Control \n(pdaj < 0.1)")
-plotMA(resOrdered, xlim=xlim, ylim=ylim, main="uillain-Barré Rec vs Control \n(Reordenado por menor pvalue)")
-plotMA(resLFC, xlim=xlim, ylim=ylim, main="Zika, GBS, GBS rec vs Control \n(LFC)")
-plotMA(res05, xlim=xlim, ylim=ylim, main="Zika, GBS, GBS rec vs Control \n(padj < 0.05)")
-plotMA(resIHW, xlim=xlim, ylim=ylim, main="Zika, GBS, GBS rec vs Control \n(IHW)")
+plotMA(res, xlim=xlim, ylim=ylim, main="Síndrome de Guillain-Barré vs Control \n(pdaj < 0.1)")
+plotMA(resOrdered, xlim=xlim, ylim=ylim, main="Síndrome deGuillain-Barré vs Control \n(Reordenado por menor pvalue)")
+plotMA(resLFC, xlim=xlim, ylim=ylim, main="Síndrome de Guillain-Barré vs Control \n(LFC)")
+plotMA(res05, xlim=xlim, ylim=ylim, main="Síndrome de Guillain-Barré vs Control \n(padj < 0.01)")
+plotMA(resIHW, xlim=xlim, ylim=ylim, main="Síndrome de Guillain-Barré vs Control \n(IHW)")
 
 # Pontos em vermelho: se o adjusted p value for menor que 0.1.
 
@@ -574,25 +572,9 @@ plotMA(resIHW, xlim=xlim, ylim=ylim, main="Zika, GBS, GBS rec vs Control \n(IHW)
 # b. apeglm - the adaptive t prior shrinkage estimator from the apeglm package (Zhu, Ibrahim, and Love 2018).
 # c. normal - estimador shrinkage original de DESeq2 (an adaptive Normal distribution as prior).
 
-
 # Usaremos o coeficiente como 2, pois é o que indica condition_chikv_vs_control.
 resultsNames(dds)
-## coeficientes nesta análise: 
-# coef = 1 ("condition_gbs_vs_control")     
-# coef = 2 ("condition_gbs_rec_vs_control")
-# coef = 3 ("condition_zika_vs_control") 
-resNorm <- lfcShrink(dds, coef="condition_zika_vs_control", type="normal")
-resAsh <- lfcShrink(dds, coef="condition_zika_vs_control", type="ashr")
-resLFC <- lfcShrink(dds, coef="condition_zika_vs_control", type='apeglm')
 
-## Agora, observar os plots juntos para coef = 3
-par(mfrow=c(1,3), mar=c(4,4,4,2))
-xlim <- c(1,1e5); ylim <- c(-3,3)
-plotMA(resLFC, xlim=xlim, ylim=ylim, main="Zika, GBS, GBS rec vs Control \n(LFC, apeglm)")
-plotMA(resNorm, xlim=xlim, ylim=ylim, main="Zika, GBS, GBS rec vs Control \n(Normalizados)")
-plotMA(resAsh, xlim=xlim, ylim=ylim, main="Zika, GBS, GBS rec vs Control \n(Adaptative Shrinkage Estimator)")
-
-# coef = 1 ("condition_gbs_vs_control")  
 resNorm <- lfcShrink(dds, coef="condition_gbs_vs_control", type="normal")
 resAsh <- lfcShrink(dds, coef="condition_gbs_vs_control", type="ashr")
 resLFC <- lfcShrink(dds, coef="condition_gbs_vs_control", type='apeglm')
@@ -600,71 +582,10 @@ resLFC <- lfcShrink(dds, coef="condition_gbs_vs_control", type='apeglm')
 ## Agora, observar os plots juntos para coef = 3
 par(mfrow=c(1,3), mar=c(4,4,4,2))
 xlim <- c(1,1e5); ylim <- c(-3,3)
-plotMA(resLFC, xlim=xlim, ylim=ylim, main="Zika, GBS, GBS rec vs Control  \n(LFC, apeglm)")
-plotMA(resNorm, xlim=xlim, ylim=ylim, main="Zika, GBS, GBS rec vs Control  \n(Normalizados)")
-plotMA(resAsh, xlim=xlim, ylim=ylim, main="Zika, GBS, GBS rec vs Control  \n(Adaptative Shrinkage Estimator)")
+plotMA(resLFC, xlim=xlim, ylim=ylim, main="Síndrome de Guillain-Barré vs Controles \nLFC (apeglm)")
+plotMA(resNorm, xlim=xlim, ylim=ylim, main="Síndrome de Guillain-Barré vs Controles \n(Normalizados)")
+plotMA(resAsh, xlim=xlim, ylim=ylim, main="Síndrome de Guillain-Barré vs Controles \n(Adaptative Shrinkage Estimator)")
 
-# Coeficiente 2: chikv_vs_control
-resNorm2 <- lfcShrink(dds, coef=2, type="normal")
-resAsh2 <- lfcShrink(dds, coef=2, type="ashr")
-resLFC2 <- lfcShrink(dds, coef=2, type='apeglm')
-
-# Agora, observar os plots juntos para coef = 2
-par(mfrow=c(1,3), mar=c(4,4,4,2))
-xlim <- c(1,1e5); ylim <- c(-3,3)
-plotMA(resLFC2, xlim=xlim, ylim=ylim, main="Guillain-Barré Doentes vs Control \n(LFC, apeglm)")
-plotMA(resNorm2, xlim=xlim, ylim=ylim, main="Guillain-Barré Doentes vs Control \n(Normalizados)")
-plotMA(resAsh2, xlim=xlim, ylim=ylim, main="Guillain-Barré Doentes vs Control \n(Adaptative Shrinkage Estimator)")
-
-
-## Plot counts
-# É útil examinar a contagem de reads para um único gene entre os grupos (control e zika).
-# Existe a função plotCounts que pode fazer isso, a qual normaliza as contagens por profundidade
-# de sequenciamento (sequencing depth) e adiciona uma pseudocontagem de 1/2 para permitir a plotagem
-# em escala de log.
-# Pode-se selecionar o gene de interesse a ser plotado por rowname ou por índice numérico.
-plotCounts(dds, gene=which.min(res$padj), intgroup="condition")
-
-# Customização com ggplot2
-# Neste caso
-a <- plotCounts(dds, gene=which.min(res$padj), intgroup="condition", 
-                returnData=TRUE)
-library("ggplot2")
-ggplot(a, aes(x=condition, y=count)) + 
-  geom_point(position=position_jitter(w=0.1,h=0)) + 
-  scale_y_log10(breaks=c(25,100,400))
-
-
-# Outros genes: adicionar on ID (nome):
-plotCounts(dds, gene='ENSG00000135845', intgroup="condition")
-
-# Outros genes
-b <- plotCounts(dds, gene='ENSG00000135845', intgroup="condition", returnData = T)
-library("ggplot2")
-ggplot(b, aes(x=condition, y=count)) + 
-  geom_point(position=position_jitter(w=0.1,h=0)) + 
-  scale_y_log10(breaks=c(25,100,400))
-
-# Outros genes
-c <- plotCounts(dds, gene='ENSG00000168300', intgroup="condition", returnData = T)
-library("ggplot2")
-ggplot(c, aes(x=condition, y=count)) + 
-  geom_point(position=position_jitter(w=0.1,h=0)) + 
-  scale_y_log10(breaks=c(25,100,400))
-
-d <- plotCounts(dds, gene='ENSG00000254708', intgroup="condition", returnData = T)
-library("ggplot2")
-ggplot(d, aes(x=condition, y=count)) + 
-  geom_point(position=position_jitter(w=0.1,h=0)) + 
-  scale_y_log10(breaks=c(25,100,400))
-
-## Mais informações na coluna Results
-mcols(res)$description
-
-# Exporting only the results which pass an adjusted p value threshold 
-# can be accomplished with the subset function, followed by the write.csv function.
-resSig <- subset(resOrdered, padj < 0.1)
-resSig
 
 ###### Parte VI
 ## Transformação e Visualização de Dados
@@ -700,17 +621,89 @@ meanSdPlot(assay(vsd))
 # 3. Objeto rld
 meanSdPlot(assay(rld))
 
+### PCA - Principal component plot das amostras
+# O plot PCA está relacionado à matriz de distância e evidencia as amostras no plano de 2D
+# abrangidas por seus primeiros componentes principais.
+# Esse gráfico é útil para visualizar o efeito geral de covariantes experimentais (e batch effects).
+
+## Usando VST
+# vsd object
+plotPCA(vsd, intgroup=c("condition", "run"))
+
+# vsd object
+plotPCA(vsd, intgroup=c("condition", "replicate"))
+
+## Usando RLT
+# rld object
+plotPCA(rld, intgroup=c("condition", "run"))
+
+# rld
+plotPCA(rld, intgroup=c("condition", "replicate"))
+
+plotPCA(rld, 
+        intgroup=c("condition", "replicate"),
+        returnData = TRUE)
+
+
+# Outras formas:
+pcaVSD <- plotPCA(vsd, 
+                  ntop = nrow(counts(dds)),
+                  returnData=FALSE)
+
+pcaVSD2 <- plotPCA(vsd, 
+                   ntop = nrow(counts(dds)),
+                   intgroup=c("condition", "replicate"),
+                   returnData=FALSE)
+
+pcaVSD
+pcaVSD2
+
+pcaRLD <- plotPCA(rld, 
+                  ntop = nrow(counts(dds)),
+                  returnData=FALSE)
+
+pcaRLD2 <- plotPCA(rld, 
+                   ntop = nrow(counts(dds)),
+                   intgroup=c("condition", "replicate"),
+                   returnData=FALSE)
+
+pcaRLD
+pcaRLD2
+
+# PCA sob TRUE
+plotPCA(rld, 
+        ntop = nrow(counts(dds)),
+        intgroup=c("condition", "replicate"),
+        returnData=TRUE)
+
+
+## Utilizando ggplot2 com os dados
+## ggplot2
+# rsd object
+pcaData <- plotPCA(vsd, intgroup=c("condition", "replicate"), returnData = TRUE)
+percentVar <- round(100 * attr(pcaData, "percentVar"))
+ggplot(pcaData, aes(PC1, PC2, color=condition, shape=replicate)) +
+  geom_point(size=3) +
+  xlab(paste0("PC1: ",percentVar[1],"% variance")) +
+  ylab(paste0("PC2: ",percentVar[2],"% variance")) + 
+  coord_fixed()
+
+# Outra forma , de acordo com pcaRLD, pcaVSD:
+pcaData <- plotPCA(vsd,  ntop = nrow(counts(dds)), intgroup=c("condition", "replicate"), returnData = TRUE)
+percentVar <- round(100 * attr(pcaData, "percentVar"))
+ggplot(pcaData, aes(PC1, PC2, color=condition, shape=replicate)) +
+  geom_point(size=3) +
+  xlab(paste0("PC1: ",percentVar[1],"% variance")) +
+  ylab(paste0("PC2: ",percentVar[2],"% variance")) + 
+  coord_fixed()
+
+
 
 ## Qualidade de Dados por Clusterização e Visualização
 # Heatmap da matriz de contagem 
-
-#library(pheatmap)
-# 1. Select
 select <- order(rowMeans(counts(dds,normalized = TRUE)),
                 decreasing = TRUE)[1:20]
-# 2. Utilizando variável condition e replicates
 df <- as.data.frame(colData(dds)[,c("condition","replicate")])  # Todas as linhas (genes) e variáveis (colunas condition e replicate)
-# 3. Pheatmap (condição e suas replicatas)
 pheatmap(assay(ntd)[select,], cluster_rows = FALSE, show_rownames = FALSE,
          cluster_cols = FALSE, annotation_col = df)
 
@@ -756,82 +749,45 @@ pheatmap(sampleDistMatrix,
          col=colors)
 
 
-### PCA - Principal component plot das amostras
-# O plot PCA está relacionado à matriz de distância e evidencia as amostras no plano de 2D
-# abrangidas por seus primeiros componentes principais.
-# Esse gráfico é útil para visualizar o efeito geral de covariantes experimentais (e batch effects).
+## Plot counts
+# É útil examinar a contagem de reads para um único gene entre os grupos (control e zika).
+# Existe a função plotCounts que pode fazer isso, a qual normaliza as contagens por profundidade
+# de sequenciamento (sequencing depth) e adiciona uma pseudocontagem de 1/2 para permitir a plotagem
+# em escala de log.
+# Pode-se selecionar o gene de interesse a ser plotado por rowname ou por índice numérico.
+plotCounts(dds, gene=which.min(res$padj), intgroup="condition")
 
-## Usando VST
-# vsd object
-plotPCA(vsd, intgroup=c("condition", "run"))
-
-# vsd object
-plotPCA(vsd, intgroup=c("condition", "replicate"))
-
-## Usando RLT
-# rld object
-plotPCA(rld, intgroup=c("condition", "run"))
-
-# rld
-plotPCA(rld, intgroup=c("condition", "replicate"))
-
-plotPCA(rld, 
-        intgroup=c("condition", "replicate"),
-        returnData = TRUE)
+# Customização com ggplot2
+a <- plotCounts(dds, gene=which.min(res$padj), intgroup="condition", 
+                returnData=TRUE)
+library("ggplot2")
+ggplot(a, aes(x=condition, y=count)) + 
+  geom_point(position=position_jitter(w=0.1,h=0)) + 
+  scale_y_log10(breaks=c(25,100,400))
 
 
-# Outra forma: res <-
-pcaVSD <- plotPCA(vsd, 
-                  ntop = nrow(counts(dds)),
-                  returnData=FALSE)
+# Outros genes: adicionar on ID (nome):
+plotCounts(dds, gene='ENSG00000135845', intgroup="condition")
 
-pcaVSD2 <- plotPCA(rld, 
-                   ntop = nrow(counts(dds)),
-                   intgroup=c("condition", "replicate"),
-                   returnData=FALSE)
+# Outros genes
+b <- plotCounts(dds, gene='ENSG00000135845', intgroup="condition", returnData = T)
+library("ggplot2")
+ggplot(b, aes(x=condition, y=count)) + 
+  geom_point(position=position_jitter(w=0.1,h=0)) + 
+  scale_y_log10(breaks=c(25,100,400))
 
-pcaVSD
-pcaVSD2
+# Outros genes
+c <- plotCounts(dds, gene='ENSG00000168300', intgroup="condition", returnData = T)
+library("ggplot2")
+ggplot(c, aes(x=condition, y=count)) + 
+  geom_point(position=position_jitter(w=0.1,h=0)) + 
+  scale_y_log10(breaks=c(25,100,400))
 
-pcaRLD <- plotPCA(rld, 
-                  ntop = nrow(counts(dds)),
-                  returnData=FALSE)
-
-pcaRLD2 <- plotPCA(rld, 
-                   ntop = nrow(counts(dds)),
-                   intgroup=c("condition", "replicate"),
-                   returnData=FALSE)
-
-pcaRLD
-pcaRLD2
-
-# PCA sob TRUE
-plotPCA(rld, 
-        ntop = nrow(counts(dds)),
-        intgroup=c("condition", "replicate"),
-        returnData=TRUE)
-
-
-
-## Utilizando ggplot2 com os dados
-## ggplot2
-# rsd object
-pcaData <- plotPCA(vsd, intgroup=c("condition", "replicate"), returnData = TRUE)
-percentVar <- round(100 * attr(pcaData, "percentVar"))
-ggplot(pcaData, aes(PC1, PC2, color=condition, shape=replicate)) +
-  geom_point(size=3) +
-  xlab(paste0("PC1: ",percentVar[1],"% variance")) +
-  ylab(paste0("PC2: ",percentVar[2],"% variance")) + 
-  coord_fixed()
-
-# Outra forma , de acordo com pcaRLD, pcaVSD:
-pcaData <- plotPCA(vsd,  ntop = nrow(counts(dds)), intgroup=c("condition", "replicate"), returnData = TRUE)
-percentVar <- round(100 * attr(pcaData, "percentVar"))
-ggplot(pcaData, aes(PC1, PC2, color=condition, shape=replicate)) +
-  geom_point(size=3) +
-  xlab(paste0("PC1: ",percentVar[1],"% variance")) +
-  ylab(paste0("PC2: ",percentVar[2],"% variance")) + 
-  coord_fixed()
+d <- plotCounts(dds, gene='ENSG00000254708', intgroup="condition", returnData = T)
+library("ggplot2")
+ggplot(d, aes(x=condition, y=count)) + 
+  geom_point(position=position_jitter(w=0.1,h=0)) + 
+  scale_y_log10(breaks=c(25,100,400))
 
 
 ## Reordenando Resultados com p-values e adjusted p-values
@@ -840,9 +796,30 @@ resOrdered <- res[order(res$pvalue), ]
 
 # Criar csv (pode ser usado em fgsea)
 write.csv(as.data.frame(resOrdered), file = './GSEA/gbs/condition_gbs_rec_vs_control_resOrdered_GSEA.csv')
+# Outros genes: adicionar on ID (nome): TYMP
+# Gene 2 da lista organizada por pvalue (resOrdered)
+plotCounts(dds, gene='ENSG00000025708', intgroup="condition")
+# Gene3
+plotCounts(dds, gene='ENSG00000135845', intgroup="condition")
+# Gene 4
+plotCounts(dds, gene='ENSG00000104765', intgroup="condition")
+# Gene 5
+plotCounts(dds, gene='ENSG00000153574', intgroup="condition")
+# Gene 6
+plotCounts(dds, gene='ENSG00000137267', intgroup="condition")
+# Gene 7
+plotCounts(dds, gene='ENSG00000198692', intgroup="condition")
+# Gene 8
+plotCounts(dds, gene='ENSG00000141574', intgroup="condition")
+# Gene 9
+plotCounts(dds, gene='ENSG00000013561', intgroup="condition")
+# Gene 10
+plotCounts(dds, gene='ENSG00000155749', intgroup="condition")
 
-# res05 padj < 0.05
-write.csv(as.data.frame(res05), file = './GSEA/gbs/condition_gbs_rec_vs_control_res05padj_GSEA.csv')
+
+## Mais informações na coluna Results
+mcols(res)$description
+
 ### Lembrar dos objetos:
 # res
 # res05 (padj < 0.05)
@@ -852,28 +829,27 @@ write.csv(as.data.frame(res05), file = './GSEA/gbs/condition_gbs_rec_vs_control_
 # resAsh
 
 ########################################### SELEÇÃO GENES UP e DOWN ###########################################
-contr_chikv_rec <- as.data.frame(res)
+contr_gbs <- as.data.frame(res)
 
 # Criar uma nova coluna com os nomes (SYMBOLS) dos genes.
-contr_chikv_rec$genes <- rownames(contr_chikv_rec)
+contr_gbs$genes <- rownames(contr_gbs)
 
 # Remoção de NAs na coluna de padj.
-contr_chikv_rec$padj[is.na(contr_chikv_rec$padj)] <- 1
-DEG_chikv <- subset(contr_chikv_rec, padj <= 0.05 & abs(log2FoldChange) > 1)
-write.csv(as.data.frame(chikv.DE), file = './DE/chikv/fgsea_DEG_chikv_CHIKV_vs_control.csv')
-head(DEG_chikv, 9)
-nrow(DEG_chikv)
+contr_gbs$padj[is.na(contr_gbs$padj)] <- 1
+DEG_gbs <- subset(contr_gbs, padj <= 0.05 & abs(log2FoldChange) > 1)
+head(DEG_gbs, 9)
+nrow(DEG_gbs)
 
 # Seleção dos genes DEs
-chikv.DE <- subset(DEG_chikv, padj <= 0.05 & abs(log2FoldChange) > 0.5)
-nrow(chikv.DE)
-head(chikv.DE, 15)
+gbs.DE <- subset(DEG_gbs, padj <= 0.05 & abs(log2FoldChange) > 0.5)
+nrow(gbs.DE)
+head(gbs.DE, 15)
 # Abaixo um arquivo que pode servir como teste para GSEA/fgsea:
-write.csv(as.data.frame(chikv.DE), file = './DE/chikv/fgsea_chikvDE_subset_CHIKV_vs_control.csv')
+write.csv(as.data.frame(gbs.DE), file = './DE/gbs/gbs_DE_subset_gbs_vs_control.csv')
 
 
 # Filtrando por log2FC
-DE_subset <- subset(chikv.DE, log2FoldChange >= 1.5 | log2FoldChange <= -1.5)
+DE_subset <- subset(gbs.DE, log2FoldChange >= 1.5 | log2FoldChange <= -1.5)
 head(DE_subset, 9)
 nrow(DE_subset)
 
@@ -881,7 +857,8 @@ nrow(DE_subset)
 DE_subset <- subset(DE_subset, padj <= 0.01)  # ou padj <= 0.05
 nrow(DE_subset)
 
-write.csv(DE_subset, file = './DE/chikv/DE_subset_chikv_rec_vs_control.csv')
+# Pode ser usado em fgsea
+write.csv(DE_subset, file = './DE/gbs/DE_subset_gbs_vs_control.csv')
 
 # Separando em genes up e down regulados
 DE_down <- subset(DE_subset, log2FoldChange <= -1.5)  # Downregulated genes
@@ -889,15 +866,15 @@ length(DE_down$genes)
 head(DE_down, 16)
 
 # Tabela de contagem de genes 'downregulados'
-write.table(as.data.frame(DE_down), sep = ",", "./DE/chikv/transcript_count_CHIKV_rec_DOWN.txt", row.names = FALSE)
-write.csv(as.data.frame(DE_down), file = './DE/chikv/transcript_count_CHIKV_rec_DOWN.csv')
+#write.table(as.data.frame(DE_down), sep = ",", "./DE/gbs/transcript_count_gbs_rec_DOWN.txt", row.names = FALSE)
+write.csv(as.data.frame(DE_down), file = './DE/gbs/transcript_count_gbs_DOWN.csv')
 
 DE_up <- subset(DE_subset, log2FoldChange >= 1.5)     # Upregulated genes
 length(DE_up$genes)
 head(DE_up, 16)
 
 # Tabela de contagem de genes 'upregulados'
-write.table(as.data.frame(DE_up), sep = ",", "./DE/chikv/transcript_count_CHKV_rec_UP.txt", row.names = FALSE)
-write.csv(as.data.frame(DE_up), file = './DE/chikv/transcript_count_CHKV_rec_UP.csv')
+#write.table(as.data.frame(DE_up), sep = ",", "./DE/gbs/transcript_count_gbs_rec_UP.txt", row.names = FALSE)
+write.csv(as.data.frame(DE_up), file = './DE/gbs/transcript_count_gbs_rec_UP.csv')
 
 ###################################################################################################################
