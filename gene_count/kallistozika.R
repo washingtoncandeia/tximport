@@ -326,10 +326,12 @@ samples <- read.table('./tables/zika/zika_vs_control.txt', header = TRUE, row.na
 head(samples, 9)
 samples$condition 
 
+# Relevel: ajustando a condição referência para análise
+samples$condition <- relevel(samples$condition, ref = 'control')
+
 # Nomeando as linhas com nome de cada arquivo de amostra:
 rownames(samples) <- samples$run
-
-samples
+head(samples, 16)
 
 # Obtendo cada arquivo de replicata das amostras usadas em kallisto:
 files <- file.path(dir, samples$run, 'abundance.h5')
@@ -337,22 +339,10 @@ files
 names(files) <- samples$run
 head(files, 9)
 
-## Usando biomaRt para nomear transcritos e genes
-mart <- biomaRt::useMart(biomart = "ensembl", 
-                         dataset = "hsapiens_gene_ensembl", 
-                         host="www.ensembl.org")
+# Transcript to Gene (SYMBOLS)
+t2g <- read_csv('./t2gs.csv')
+t2g
 
-
-t2g <- biomaRt::getBM(attributes = c("ensembl_transcript_id", 
-                                     "ensembl_gene_id"), 
-                      mart = mart)
-
-
-t2g <- dplyr::rename(t2g, target_id = ensembl_transcript_id,
-                     ens_gene = ensembl_gene_id)
-
-
-head(t2g, 9)
 ## Obs.: A coluna de transcripts IDs não possui versão.
 ## Ao utilizar o tximport prestar atenção na opção ignoreTxVersion.
 
@@ -364,9 +354,7 @@ head(t2g, 9)
 # e genes do Ensembl tenham ignorados as versões e barras |, respectivamente.
 txi.kallisto <- tximport(files, 
                          type = 'kallisto',
-                         tx2gene = t2g,
-                         ignoreTxVersion = TRUE,
-                         ignoreAfterBar = TRUE)
+                         tx2gene = t2g)
 
 
 # Observações gerais
@@ -384,89 +372,46 @@ dds.txi <- DESeqDataSetFromTximport(txi = txi.kallisto,
                                     colData = samples,
                                     design = ~condition)
 
-# Relevel: ajustando a condição referência para análise
-dds.txi$condition <- relevel(dds.txi$condition, ref = 'control')
-str(dds.txi$condition)
-
 # Observar as amostras:
 head(as.data.frame(colData(dds.txi)), 12)
-
-
-# Agora, o objeto dds.Txi pode ser usado como aquele dds nos
-# passos subsequentes de DESeq2.
+# Agora, o objeto dds.Txi pode ser usado como aquele dds
 head(dds.txi$condition)
-
-# Se uma das condições for retirada da análise ($condition), 
-# será preciso fazer um drop level dos fatores restantes.
-#dds.txi$condition <- droplevels( dds.txi$condition)
 
 ## Pre-filtering
 # Filtrar por counts insignificantes.
 # Remover genes sem contagens significantes para as amostras. Neste caso, no mínimo 10 contagens.
 keep <- rowSums(counts(dds.txi)) >= 10
-
 # Renomear dds.txi para dds:
 dds <- dds.txi[keep, ]
-
 head(dds, 9)
+head(dds$condition, 9)
 # Outra forma:
 #dds <- dds.txi[rowSums(counts(dds.txi)) >= 10, ]
 
-head(dds$condition, 9)
-
-# Observar o design
-design(dds)
-
-
-
-###----------------- Análise de Expressão Diferencial (DE) ----------------- ###
+### Análise de Expressão Diferencial (DE)
 # Objeto dds por DESeq2
 # Modelando as contagens com efeitos de condition vs control
 dds <- DESeq(dds)
-
 # A função results gera tabelas de resultados.
-# condition chikv rec vs control 
 res <- results(dds, alpha = 0.05)
-
-# Note que podemos especificar o coeficiente ou contraste 
-# que queremos construir como uma tabela de resultados, usando:
-#res <- results(dds, contrast = c('condition', 'control', 'chikv'))
-
 # Visualizar
 res
 # Summary
 summary(res)
-
 # Informações de metadados do objeto res: colunas.
 mcols(res, use.names=TRUE)
 
-# Salvar .csv Wald test p-value: condition gbs/gbs_rec vs control em .csv para fgsea
-write.csv(as.data.frame(res), file = './GSEA/zika/fgsea_condition_zika_vs_control.csv')
+# Salvar .csv Wald test p-value: condition zika vs control em .csv para fgsea
+# Abaixo, mantendo nomes de colunas
+readr::write_csv(res.gsea, path='./GSEA/zika/fgsea_zika_vs_control.csv')
+# Ou, desta forma:
+write.csv(as.data.frame(res), file = './GSEA/zika/fgsea_zika_vs_control.csv')
 
 ## Reordenando Resultados com p-values e adjusted p-values
 # Ordenar os resultados da tabela por menor p value:
 resOrdered <- res[order(res$pvalue), ]
 resOrdered
 write.csv(as.data.frame(resOrdered), file = './tables/zika/resOrdered/resOrdered_zika_vs_control.csv')
-# Examinando as contagens e contagens normalizadas para os genes com menor p-value:
-idx <- which.min(res$pvalue)
-idx
-counts(dds)[idx, ]
-
-#Normalization
-counts(dds, normalized=TRUE)[ idx, ]
-
-
-## Continuação:
-## Log fold change shrinkage for visualization and ranking
-# Contração log fod change para visualização e ranqueamento.
-# Shrinkage of effect size (LFC estimates)
-resultsNames(dds)
-
-## coeficientes nesta análise: 
-# coef = 1 ("condition_gbs_vs_control")     
-# coef = 2 ("condition_gbs_rec_vs_control")
-# coef = 3 ("condition_zika_vs_control") 
 
 ### LFC - Log2 Fold Changes Shrinkage
 ## Visualizando para log2 fold changes shrinkage, LFC (Shrinkage of Effect Size)
@@ -474,65 +419,28 @@ resultsNames(dds)
 # sem requerimento de thresholds de filtragem arbitrários.
 # Para contrair (shrink) LFC passar objeto dds para função lfcShrink:
 resLFC <- lfcShrink(dds, coef = 'condition_zika_vs_control', type = 'apeglm', res = res)
-#resLFC <- lfcShrink(dds, coef = 2, type = 'apeglm', res = res)
-
 # Observar
 resLFC
 # Summary
 summary(resLFC)
 
 # FDR cutoff, alpha = 0.05.
-res025 <- results(dds, alpha=0.025)
-summary(res025)
+res001 <- results(dds, alpha=0.01)
+summary(res001)
 
-### Independent Hypothesis Weighting
+### Independent Hypothesis Weighting - IHW
 ## Ponderação de Hipóteses Independentes
 # Filtragem de p value: ponderar (weight) hipóteses para otimizar o poder.
 # Está disponível no Bioconductor sob nome IHW.
 resIHW <- results(dds, filterFun = ihw, alpha = 0.05)
-# Metadados
-metadata(resIHW)$ihwResult
-
 
 # Summary
 summary(res)
 # Summary
 summary(res025)
-# Summary
-summary(resIHW)
-# Summary
-summary(resLFC)
-
-# Quantos p-values são menores que 0.1?
-sum(res$padj < 0.1, na.rm = TRUE)
-# Quantos p-values são menores que 0.1?
-sum(res025$padj < 0.1, na.rm=TRUE)
-# Quantos p-values são menores que 0.1?
-sum(resIHW$padj < 0.1, na.rm=TRUE)
-# Quantos p-values são menores que 0.1?
-sum(resLFC$padj < 0.1, na.rm = TRUE)
-
-
-# Quantos p-adjusted são menores que 0.05?
-sum(res$padj < 0.05, na.rm = TRUE)
-# Quantos p-adjusted são menores que 0.05?
-sum(res025$padj < 0.05, na.rm = TRUE)
-# Quantos p-adjusted são menores que 0.05? 
-sum(resIHW$padj < 0.05, na.rm=TRUE)
-# Quantos p-values são menores que 0.05?
-sum(resLFC$padj < 0.05, na.rm = TRUE)
-
-
 
 ##### Parte V - Exploração de Resultados
 ## MA-plot
-
-## Lembrar dos objetos:
-# res
-# res05 (padj < 0.05)
-# resOrdered
-# resLFC
-# resIHW
 
 # A função plotMA mostra os log2 fold change atribuível a uma dada variável
 # sobre a média de contagens normalizadas para todas as amostras no DESeqDataSet.
@@ -554,11 +462,279 @@ xlim <- c(1,1e5); ylim <- c(-3,3)
 plotMA(res, xlim=xlim, ylim=ylim, main="Febre Zika vs Controles \n(pdaj < 0.05)")
 plotMA(resLFC, xlim=xlim, ylim=ylim, main="Febre Zika vs Controles \n(LFC)")
 plotMA(resIHW, xlim=xlim, ylim=ylim, main="Febre Zika vs Controles \n(IHW)")
-plotMA(res025, xlim=xlim, ylim=ylim, main="Febre Zika vs Controles \n(padj < 0.025)")
+plotMA(res025, xlim=xlim, ylim=ylim, main="Febre Zika vs Controles \n(padj < 0.01)")
 # Pontos em vermelho: se o adjusted p value for menor que 0.1.
 
 ### Alternative Shrinkage Estimators
-## Lembrar de objeto LFC e Shrinkage
+# Em argumento type, pode-se utilar os parâmetros: ashr, apeglm e normal.
+# a. ashr - adaptive shrinkage estimator from the ashr package (Stephens 2016)
+# b. apeglm - the adaptive t prior shrinkage estimator from the apeglm package (Zhu, Ibrahim, and Love 2018).
+# c. normal - estimador shrinkage original de DESeq2 (an adaptive Normal distribution as prior).
+
+# Usaremos o coeficiente como 2, pois é o que indica condition_zika_vs_control.
+resultsNames(dds)
+## coeficientes nesta análise: 
+# coef = 2 ("condition_zika_rec_vs_control")
+resNorm <- lfcShrink(dds, coef="condition_zika_rec_vs_control", type="normal")
+resAsh <- lfcShrink(dds, coef="condition_zika_rec_vs_control", type="ashr")
+resLFC <- lfcShrink(dds, coef="condition_zika_rec_vs_control", type='apeglm')
+
+## Agora, observar os plots juntos para coef = 2
+par(mfrow=c(1,3), mar=c(4,4,4,2))
+xlim <- c(1,1e5); ylim <- c(-3,3)
+plotMA(resLFC, xlim=xlim, ylim=ylim, main="Febre Zika vs Control \nLFC (apeglm)")
+plotMA(resNorm, xlim=xlim, ylim=ylim, main="Febre Zika vs Control \n(Normalizados)")
+plotMA(resAsh, xlim=xlim, ylim=ylim, main="Febre Zika vs Control \n(Adaptative Shrinkage Estimator)")
+
+## Mais informações na coluna Results
+mcols(res)$description
+
+# Exporting only the results which pass an adjusted p value threshold 
+# can be accomplished with the subset function, followed by the write.csv function.
+resSig <- subset(resOrdered, padj < 0.01)
+resSig
+
+write.csv(as.data.frame(resSig), file = './tables/zika/resOrdered/resSig_0_01_zika_vs_control.csv')
+
+###### Parte VI
+## Transformação e Visualização de Dados
+# Transformações de contagem
+
+# VST - Variance Stabilizing Transformation 
+vsd <- vst(dds, blind=FALSE)
+head(assay(vsd), 3)
+# Os valores transformados não são contagens, sendo armazenados no slot assay.
+# colData está ligado a dds e é acessível:
+colData(vsd)
+
+# RLD - Regularized log Transformation 
+rld <- rlog(dds, blind=FALSE)
+head(assay(rld), 6)
+# Os valores transformados não são contagens, sendo armazenados no slot assay.
+# colData está ligado a dds e é acessível:
+colData(rld)
+
+## Efeitos das Transformações na Variância
+# Plot de desvio padrão dos dados transformados através das amostras,
+# contra a média, usando shifting logarithm transformation
+# fornece log2(n + 1)
+ntd <- normTransform(dds)
+
+## library(vsn)
+# 1. Objeto ntd
+meanSdPlot(assay(ntd))
+
+# 2. Objeto vsd
+meanSdPlot(assay(vsd))
+
+# 3. Objeto rld
+meanSdPlot(assay(rld))
+
+### PCA - Principal component plot das amostras
+# O plot PCA está relacionado à matriz de distância e evidencia as amostras no plano de 2D
+# abrangidas por seus primeiros componentes principais.
+# Esse gráfico é útil para visualizar o efeito geral de covariantes experimentais (e batch effects).
+
+## Usando VST
+# vsd object
+plotPCA(vsd, intgroup=c("condition", "run"))
+
+# vsd object
+plotPCA(vsd, intgroup=c("condition", "replicate"))
+
+## Usando RLT
+# rld object
+plotPCA(rld, intgroup=c("condition", "run"))
+
+# rld
+plotPCA(rld, intgroup=c("condition", "replicate"))
+
+plotPCA(rld, 
+        intgroup=c("condition", "replicate"),
+        returnData = TRUE)
+
+
+# Outras formas:
+pcaVSD <- plotPCA(vsd, 
+                  ntop = nrow(counts(dds)),
+                  returnData=FALSE)
+
+pcaVSD2 <- plotPCA(vsd, 
+                   ntop = nrow(counts(dds)),
+                   intgroup=c("condition", "replicate"),
+                   returnData=FALSE)
+
+pcaVSD
+pcaVSD2
+
+pcaRLD <- plotPCA(rld, 
+                  ntop = nrow(counts(dds)),
+                  returnData=FALSE)
+
+pcaRLD2 <- plotPCA(rld, 
+                   ntop = nrow(counts(dds)),
+                   intgroup=c("condition", "replicate"),
+                   returnData=FALSE)
+
+pcaRLD
+pcaRLD2
+
+# PCA sob TRUE
+plotPCA(rld, 
+        ntop = nrow(counts(dds)),
+        intgroup=c("condition", "replicate"),
+        returnData=TRUE)
+
+
+## Utilizando ggplot2 com os dados
+## ggplot2
+# rsd object
+pcaData <- plotPCA(vsd, intgroup=c("condition", "replicate"), returnData = TRUE)
+percentVar <- round(100 * attr(pcaData, "percentVar"))
+ggplot(pcaData, aes(PC1, PC2, color=condition, shape=replicate)) +
+  geom_point(size=3) +
+  xlab(paste0("PC1: ",percentVar[1],"% variance")) +
+  ylab(paste0("PC2: ",percentVar[2],"% variance")) + 
+  coord_fixed()
+
+# Outra forma , de acordo com pcaRLD, pcaVSD:
+pcaData <- plotPCA(vsd,  ntop = nrow(counts(dds)), intgroup=c("condition", "replicate"), returnData = TRUE)
+percentVar <- round(100 * attr(pcaData, "percentVar"))
+ggplot(pcaData, aes(PC1, PC2, color=condition, shape=replicate)) +
+  geom_point(size=3) +
+  xlab(paste0("PC1: ",percentVar[1],"% variance")) +
+  ylab(paste0("PC2: ",percentVar[2],"% variance")) + 
+  coord_fixed()
+
+### Heatmap das Distâncias Amostra-Amostra
+# O utro uso de dados transformados: sample clustering.
+# Usando a função dist para transposição de matriz de contagem transformada.
+sampleDists <- dist(t(assay(vsd)))
+
+# library(RColorBrewer)
+sampleDistMatrix <- as.matrix(sampleDists)
+rownames(sampleDistMatrix) <- paste(vsd$condition, vsd$run, sep=" - ")
+colnames(sampleDistMatrix) <- NULL
+colors <- colorRampPalette( rev(brewer.pal(9, "Reds")) )(255)
+pheatmap(sampleDistMatrix,
+         clustering_distance_rows=sampleDists,
+         clustering_distance_cols=sampleDists,
+         col=colors)
+
+#library(pheatmap)
+# 1. Select
+select <- order(rowMeans(counts(dds,normalized = TRUE)),
+                decreasing = TRUE)[1:20]
+# 2. Utilizando variável condition e replicates
+df <- as.data.frame(colData(dds)[,c("condition","replicate")])  # Todas as linhas (genes) e variáveis (colunas condition e replicate)
+# 3. Pheatmap (condição e suas replicatas)
+pheatmap(assay(ntd)[select,], cluster_rows = FALSE, show_rownames = FALSE,
+         cluster_cols = FALSE, annotation_col = df)
+
+
+# Utilizando variável condition e pop
+df2 <- as.data.frame(colData(dds)[,c("condition","pop")])
+pheatmap(assay(ntd)[select,], cluster_rows = FALSE, show_rownames = FALSE,
+         cluster_cols = FALSE, annotation_col = df2)
+
+
+## VST - Variance Stabilizing Transformation 
+# vsd - condition, replicate (df)
+pheatmap(assay(vsd)[select,], cluster_rows=FALSE, show_rownames=FALSE,
+         cluster_cols=FALSE, annotation_col=df)
+
+# vsd - condition, pop (df2)
+pheatmap(assay(vsd)[select,], cluster_rows=FALSE, show_rownames=FALSE,
+         cluster_cols=FALSE, annotation_col=df2)
+
+## RLD - Regularized log Transformation 
+# rld - condition, replicate (df)
+pheatmap(assay(rld)[select,], cluster_rows=FALSE, show_rownames=FALSE,
+         cluster_cols=FALSE, annotation_col=df)
+
+# rld - condition, pop (df2)
+pheatmap(assay(rld)[select,], cluster_rows=FALSE, show_rownames=FALSE,
+         cluster_cols=FALSE, annotation_col=df2)
+
+
+### Heatmap das Distâncias Amostra-Amostra
+# O utro uso de dados transformados: sample clustering.
+# Usando a função dist para transposição de matriz de contagem transformada.
+sampleDists <- dist(t(assay(vsd)))
+
+# library(RColorBrewer)
+sampleDistMatrix <- as.matrix(sampleDists)
+rownames(sampleDistMatrix) <- paste(vsd$condition, vsd$run, sep=" - ")
+colnames(sampleDistMatrix) <- NULL
+colors <- colorRampPalette( rev(brewer.pal(9, "Reds")) )(255)
+pheatmap(sampleDistMatrix,
+         clustering_distance_rows=sampleDists,
+         clustering_distance_cols=sampleDists,
+         col=colors)
+
+sampleDists <- dist(t(assay(rld)))
+
+# library(RColorBrewer)
+sampleDistMatrix <- as.matrix(sampleDists)
+rownames(sampleDistMatrix) <- paste(rld$condition, rld$run, sep=" - ")
+colnames(sampleDistMatrix) <- NULL
+colors <- colorRampPalette( rev(brewer.pal(9, "Reds")) )(255)
+pheatmap(sampleDistMatrix,
+         clustering_distance_rows=sampleDists,
+         clustering_distance_cols=sampleDists,
+         col=colors)
+
+
+########################################### SELEÇÃO GENES UP e DOWN ###########################################
+contr_gbs_rec <- as.data.frame(res)
+
+# Criar uma nova coluna com os nomes (SYMBOLS) dos genes.
+contr_gbs_rec$genes <- rownames(contr_gbs_rec)
+
+# Remoção de NAs na coluna de padj.
+contr_gbs_rec$padj[is.na(contr_gbs_rec$padj)] <- 1
+DEG_gbsRec <- subset(contr_gbs_rec, padj <= 0.05 & abs(log2FoldChange) > 1)
+head(DEG_gbsRec, 9)
+nrow(DEG_gbsRec)
+
+# Seleção dos genes DEs
+gbsRec.DE <- subset(DEG_gbsRec, padj <= 0.05 & abs(log2FoldChange) > 0.5)
+nrow(gbsRec.DE)
+head(gbsRec.DE, 15)
+# Abaixo um arquivo que pode servir como teste para GSEA/fgsea:
+write.csv(as.data.frame(gbsRec.DE), file = './DE/gbs/gbsRec_DE_subset_gbs_rec_vs_control.csv')
+
+
+# Filtrando por log2FC
+DE_subset <- subset(gbsRec.DE, log2FoldChange >= 1.5 | log2FoldChange <= -1.5)
+head(DE_subset, 9)
+nrow(DE_subset)
+
+# Filtrando por padj
+DE_subset <- subset(DE_subset, padj <= 0.01)  # ou padj <= 0.05
+nrow(DE_subset)
+
+# Pode ser usado em fgsea
+write.csv(DE_subset, file = './DE/gbs/DE_subset_gbs_rec_vs_control.csv')
+
+# Separando em genes up e down regulados
+DE_down <- subset(DE_subset, log2FoldChange <= -1.5)  # Downregulated genes
+length(DE_down$genes)
+head(DE_down, 16)
+
+# Tabela de contagem de genes 'downregulados'
+#write.table(as.data.frame(DE_down), sep = ",", "./DE/gbs/transcript_count_gbs_rec_DOWN.txt", row.names = FALSE)
+write.csv(as.data.frame(DE_down), file = './DE/gbs/transcript_count_gbs_rec_DOWN.csv')
+
+DE_up <- subset(DE_subset, log2FoldChange >= 1.5)     # Upregulated genes
+length(DE_up$genes)
+head(DE_up, 16)
+
+# Tabela de contagem de genes 'upregulados'
+#write.table(as.data.frame(DE_up), sep = ",", "./DE/gbs/transcript_count_gbs_rec_UP.txt", row.names = FALSE)
+write.csv(as.data.frame(DE_up), file = './DE/gbs/transcript_count_gbs_rec_UP.csv')
+
+###################################################################################################################
 
 
 ## Plot counts
@@ -656,224 +832,3 @@ library("ggplot2")
 ggplot(j, aes(x=condition, y=count)) + 
   geom_point(position=position_jitter(w=0.1,h=0)) + 
   scale_y_log10(breaks=c(25,100,400))
-
-## Mais informações na coluna Results
-mcols(res)$description
-
-# Exporting only the results which pass an adjusted p value threshold 
-# can be accomplished with the subset function, followed by the write.csv function.
-resSig <- subset(resOrdered, padj < 0.025)
-resSig
-
-write.csv(as.data.frame(resSig), file = './tables/zika/resOrdered/resSig_0_025_zika_vs_control.csv')
-
-
-###### Parte VI
-## Transformação e Visualização de Dados
-# Transformações de contagem
-
-# VST - Variance Stabilizing Transformation 
-vsd <- vst(dds, blind=FALSE)
-head(assay(vsd), 3)
-# Os valores transformados não são contagens, sendo armazenados no slot assay.
-# colData está ligado a dds e é acessível:
-colData(vsd)
-
-# RLD - Regularized log Transformation 
-rld <- rlog(dds, blind=FALSE)
-head(assay(rld), 6)
-# Os valores transformados não são contagens, sendo armazenados no slot assay.
-# colData está ligado a dds e é acessível:
-colData(rld)
-
-## Efeitos das Transformações na Variância
-# Plot de desvio padrão dos dados transformados através das amostras,
-# contra a média, usando shifting logarithm transformation
-# fornece log2(n + 1)
-ntd <- normTransform(dds)
-
-## library(vsn)
-# 1. Objeto ntd
-meanSdPlot(assay(ntd))
-
-# 2. Objeto vsd
-meanSdPlot(assay(vsd))
-
-# 3. Objeto rld
-meanSdPlot(assay(rld))
-
-
-## Qualidade de Dados por Clusterização e Visualização
-# Heatmap da matriz de contagem 
-
-#library(pheatmap)
-# 1. Select
-select <- order(rowMeans(counts(dds,normalized = TRUE)),
-                decreasing = TRUE)[1:20]
-# 2. Utilizando variável condition e replicates
-df <- as.data.frame(colData(dds)[,c("condition","replicate")])  # Todas as linhas (genes) e variáveis (colunas condition e replicate)
-# 3. Pheatmap (condição e suas replicatas)
-pheatmap(assay(ntd)[select,], cluster_rows = FALSE, show_rownames = FALSE,
-         cluster_cols = FALSE, annotation_col = df)
-
-
-# Utilizando variável condition e pop
-df2 <- as.data.frame(colData(dds)[,c("condition","pop")])
-pheatmap(assay(ntd)[select,], cluster_rows = FALSE, show_rownames = FALSE,
-         cluster_cols = FALSE, annotation_col = df2)
-
-
-## VST - Variance Stabilizing Transformation 
-# vsd - condition, replicate (df)
-pheatmap(assay(vsd)[select,], cluster_rows=FALSE, show_rownames=FALSE,
-         cluster_cols=FALSE, annotation_col=df)
-
-# vsd - condition, pop (df2)
-pheatmap(assay(vsd)[select,], cluster_rows=FALSE, show_rownames=FALSE,
-         cluster_cols=FALSE, annotation_col=df2)
-
-## RLD - Regularized log Transformation 
-# rld - condition, replicate (df)
-pheatmap(assay(rld)[select,], cluster_rows=FALSE, show_rownames=FALSE,
-         cluster_cols=FALSE, annotation_col=df)
-
-# rld - condition, pop (df2)
-pheatmap(assay(rld)[select,], cluster_rows=FALSE, show_rownames=FALSE,
-         cluster_cols=FALSE, annotation_col=df2)
-
-
-### Heatmap das Distâncias Amostra-Amostra
-# O utro uso de dados transformados: sample clustering.
-# Usando a função dist para transposição de matriz de contagem transformada.
-sampleDists <- dist(t(assay(vsd)))
-
-# library(RColorBrewer)
-sampleDistMatrix <- as.matrix(sampleDists)
-rownames(sampleDistMatrix) <- paste(vsd$condition, vsd$run, sep=" - ")
-colnames(sampleDistMatrix) <- NULL
-colors <- colorRampPalette( rev(brewer.pal(9, "Reds")) )(255)
-pheatmap(sampleDistMatrix,
-         clustering_distance_rows=sampleDists,
-         clustering_distance_cols=sampleDists,
-         col=colors)
-
-sampleDists <- dist(t(assay(rld)))
-
-# library(RColorBrewer)
-sampleDistMatrix <- as.matrix(sampleDists)
-rownames(sampleDistMatrix) <- paste(rld$condition, rld$run, sep=" - ")
-colnames(sampleDistMatrix) <- NULL
-colors <- colorRampPalette( rev(brewer.pal(9, "Reds")) )(255)
-pheatmap(sampleDistMatrix,
-         clustering_distance_rows=sampleDists,
-         clustering_distance_cols=sampleDists,
-         col=colors)
-
-
-### PCA - Principal component plot das amostras
-# O plot PCA está relacionado à matriz de distância e evidencia as amostras no plano de 2D
-# abrangidas por seus primeiros componentes principais.
-# Esse gráfico é útil para visualizar o efeito geral de covariantes experimentais (e batch effects).
-
-## Usando VST
-# vsd object
-plotPCA(vsd, intgroup=c("condition", "replicate"))
-
-## Usando RLT
-# rld object
-plotPCA(rld, intgroup=c("condition", "run"))
-
-# rld
-plotPCA(rld, intgroup=c("condition", "replicate"))
-
-plotPCA(rld, 
-        intgroup=c("condition", "replicate"),
-        returnData = TRUE)
-
-
-# Outra forma: res <-
-pcaVSD <- plotPCA(vsd, 
-                  ntop = nrow(counts(dds)),
-                  returnData=FALSE)
-
-pcaVSD
-
-pcaRLD <- plotPCA(rld, 
-                   ntop = nrow(counts(dds)),
-                   intgroup=c("condition", "replicate"),
-                   returnData=FALSE)
-pcaRLD
-
-
-pcaRLD2 <- plotPCA(rld, 
-                  ntop = nrow(counts(dds)),
-                  returnData=FALSE)
-
-pcaRLD2
-
-pcaRLD3 <- plotPCA(rld, 
-                   ntop = nrow(counts(dds)),
-                   intgroup=c("condition", "replicate"),
-                   returnData=FALSE)
-pcaRLD3
-
-# PCA sob TRUE
-plotPCA(rld, 
-        ntop = nrow(counts(dds)),
-        intgroup=c("condition", "replicate"),
-        returnData=TRUE)
-
-
-
-
-####------------------- Criar .CSV (pode ser usado em fgsea) -------------------####
-# Salvar .csv Wald test p-value: condition gbs/gbs_rec vs control em .csv para fgsea
-# Abaixo .csv já criado na linha 444 deste código:
-write.csv(as.data.frame(res), file = './GSEA/gbs/condition_gbs_vs_control.csv')
-write.csv(as.data.frame(res2gbs), file = './GSEA/gbs/condition_gbs_vs_control.csv')
-
-contrGBSvsCONTROL <- as.data.frame(res2gbs)
-write.csv(contrGBSvsCONTROL, file = './GSEA/gbs/condition_gbs_vs_control.csv')
-
-
-# Formas alternativas de arquivos .csv para fgsea:
-# Outra forma .csv para fgsea (gbs rec):
-contrGBSrecvsCONTROL <- as.data.frame(results(dds, contrast=c('condition','gbs_rec','control')))
-write.csv(contrGBSrecvsCONTROL, file = './GSEA/gbs/condition_gbs_Rec_vs_control.csv')
-
-# Ou:
-res2gbs_rec <- results(dds, contrast = c("condition", "gbs_rec", "control"))
-write.csv(as.data.frame(res2gbs_rec), file = './GSEA/gbs/condition_gbs_Rec_vs_control.csv')
-
-
-### Análise Alternativa de Genes DE com cutoff pdaj <= 0.05 para genes DE ###
-# Observe que isto é uma forma alternativa se o cutoff não tiver sido feito em:
-# res <- results(dds, alpha=0.05)
-# https://github.com/washingtoncandeia/DESeq_IMT/blob/master/codes_DESeq2/1_GBSrecuperadosVsZika.R
-
-
-# Criar uma nova coluna com os nomes (SYMBOLS) dos genes.
-contrGBSvsCONTROL$genes <- rownames(contrGBSvsCONTROL)
-
-# Remoção de NAs na coluna de padj.
-contrGBSvsCONTROL$padj[is.na(contrGBSvsCONTROL$padj)] <- 1
-
-DEGscontrGBSvsCONTROL <- subset(contrGBSvsCONTROL, padj <= 0.05 & abs(log2FoldChange) > 1)
-
-
-#Volcanoplot
-with(as.data.frame(contrGBSvsCONTROL[!(-log10(contrGBSvsCONTROL$padj) == 0), ]), plot(log2FoldChange,-log10(padj), pch=16, axes=T,
-                                        xlim = c(-6,6), ylim = c(0,4),                                    
-                                        xlab = NA, ylab = "-Log10(Pvalue-Adjusted)", main = "Guillain-Barré vs Grupo Controle"
-                                                                            
-)
-)
-
-with(subset(subset(as.data.frame(contr_RECzika), padj <= 0.05), log2FoldChange <= -1), points(log2FoldChange,-log10(padj), pch=21, col="black",bg = "#69B1B7"))
-with(subset(subset(as.data.frame(contr_RECzika), padj <= 0.05), log2FoldChange >= 1), points(log2FoldChange,-log10(padj),pch=21, col="black",bg = "tomato3"))
-abline(h=1.3,col="green", lty = 2, cex= 3)
-abline(v=1,col="green", lty = 2, cex= 3)
-abline(v=-1,col="green", lty = 2, cex= 3)
-
-####------------------------------------------------------------------------------####
-
