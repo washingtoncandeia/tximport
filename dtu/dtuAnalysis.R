@@ -158,12 +158,6 @@ samples_info <- samples_info %>%
 samples_info <- samples_info %>% 
   filter(!grepl(CHIKV, pop))
 
-samples_info <- samples_info %>% 
-  filter(!grepl(GBS, pop))
-
-samples_info <- samples_info %>% 
-  filter(!grepl(GBS_REC, pop))
-
 samples_info
 
 ## ------------------------------------------------------------------------------------ ##
@@ -209,7 +203,7 @@ txi.kallisto.scaledTPM <- tximport(files,
                                    txOut = FALSE,
                                    countsFromAbundance = "scaledTPM")
 
-# 3. Offset Matrix para uso com simple_sum
+# 3. Offsetmatrix para uso com simple_sum
 txi.kallisto.tx <- tximport(files,
                             type = "kallisto",
                             tx2gene = t2g, 
@@ -241,111 +235,23 @@ kallisto_quant <- list(geneCOUNT_kall_simplesum = txi.kallisto$counts,
                        txi_kallistotx = txi.kallisto.tx)
 
 
-#-----------Função: dff_expression_DESeq2 
 
-diff_expression_DESeq2 <- function(txi = NULL, counts, meta, cond_name, 
-                                   level1, level2, sample_name) {
-  ## Differential expression analysis with DESeq2
-  
-  suppressPackageStartupMessages(library(DESeq2))
-  
-  ## If tximport object provided, generate DESeqDataSet from it. Otherwise, 
-  ## use the provided count matrix.
-  if (!is.null(txi)) {
-    txi$counts <- round(txi$counts)
-    keep_feat <- rownames(txi$counts[rowSums(is.na(txi$counts)) == 0 & rowSums(txi$counts) != 0, ])
-    txi <- lapply(txi, function(w) {
-      if (!is.null(dim(w))) w[match(keep_feat, rownames(w)), ]
-      else w
-    })
-    dsd <- DESeqDataSetFromTximport(txi, 
-                                    colData = meta[match(colnames(txi$counts), 
-                                                         meta[, sample_name]), ],
-                                    design = as.formula(paste0("~", cond_name)))
-  } else {
-    counts <- round(counts)
-    cts = counts[rowSums(is.na(counts)) == 0, ]
-    cts <- cts[rowSums(cts) != 0, ]
-    dsd <- DESeqDataSetFromMatrix(countData = round(cts), 
-                                  colData = meta[match(colnames(cts), 
-                                                       meta[, sample_name]), ],
-                                  design = as.formula(paste0("~", cond_name)))
-  }
-  
-  ## Estimate dispersions and fit model
-  dsd <- DESeq(dsd, test = "Wald", fitType = "local", betaPrior = TRUE)
-  res <- as.data.frame(results(dsd, contrast = c(cond_name, level2, level1),
-                               cooksCutoff = FALSE, independentFiltering = FALSE))
-  return(list(dsd = dsd, res = res))
-}
-#---
-
-
-###-- Função: plot_theme 
-
-plot_theme <- function() {
-  ## ggplot2 plotting theme
-  theme_grey() +
-    theme(legend.position = "right",
-          panel.background = element_rect(fill = "white", colour = "black"),
-          panel.grid.minor.x = element_blank(),
-          panel.grid.minor.y = element_blank(),
-          strip.text = element_text(size = 10),
-          strip.background = element_rect(fill = NA, colour = "black"),
-          axis.text.x = element_text(size = 10),
-          axis.text.y = element_text(size = 10),
-          axis.title.x = element_text(size = 15),
-          axis.title.y = element_text(size = 15),
-          plot.title = element_text(colour = "black", size = 20))
-}
-
-##--
-
-###--- Função: panel_cor 
-panel_cor <- function(x, y, digits = 3, cex.cor) {
-  ## Panel function to print Pearson and Spearman correlations
-  usr <- par("usr")
-  on.exit(par(usr))
-  par(usr = c(0, 1, 0, 1))
-  r1 <- abs(cor(x, y, method = "pearson", use = "complete"))
-  txt1 <- format(c(r1, 0.123456789), digits = digits)[1]
-  r2 <- abs(cor(x, y, method = "spearman", use = "complete"))
-  txt2 <- format(c(r2, 0.123456789), digits = digits)[1]
-  text(0.5, 0.35, paste("pearson =", txt1), cex = 1.1)
-  text(0.5, 0.65, paste("spearman =", txt2), cex = 1.1)
-}
-
-
-panel_smooth <-function (x, y, col = "blue", bg = NA, pch = ".", 
-                        cex = 0.8, ...) {
-  ## Panel function to plot points
-  points(x, y, pch = pch, col = col, bg = bg, cex = cex)
-}
-  
-  
-  
 # Estimativas de transcritos: DGE e DTU analysis  
   
-res_kall_simplesum_avetxl_deseq2 <-  diff_expression_DESeq2(txi = kallisto_quant$txi_kallistosimplesum,
-                                                              counts = NULL,
-                                                              meta = samples, cond_name = "condition",
-                                                              sample_name = "run",
-                                                              level1 = "control",
-                                                              level2 = "zika")
-
-res_kall_dtu_deseq2 <- diff_expression_DESeq2(txi = NULL,
-                                                    counts = kallisto_quant$geneCOUNT_kall_dtu,
-                                                    meta = samples, cond_name = "condition",
-                                                    sample_name = "run",
-                                                    level1 = "control",
-                                                    level2 = "zika")
-
 res_kall_simplesum_deseq2 <- diff_expression_DESeq2(txi = NULL,
                                                     counts = kallisto_quant$geneCOUNT_kall_simplesum, 
                                                     meta = samples, cond_name = "condition",
                                                     sample_name = "run",
                                                     level1 = "control",
-                                                    level2 = "zika")
+                                                    level2 = "gbs_rec")
+
+
+res_kall_simplesum_avetxl_deseq2 <-  diff_expression_DESeq2(txi = kallisto_quant$txi_kallistosimplesum,
+                                                            counts = NULL,
+                                                            meta = samples, cond_name = "condition",
+                                                            sample_name = "run",
+                                                            level1 = "control",
+                                                            level2 = "gbs_rec")
 
 
 res_kall_scaledTPM_deseq2 <- diff_expression_DESeq2(txi = NULL,
@@ -353,38 +259,48 @@ res_kall_scaledTPM_deseq2 <- diff_expression_DESeq2(txi = NULL,
                                                     meta = samples, cond_name = "condition",
                                                     sample_name = "run",
                                                     level1 = "control",
-                                                    level2 = "zika")
+                                                    level2 = "gbs_rec")
+
+
+res_kall_dtu_deseq2 <- diff_expression_DESeq2(txi = NULL,
+                                              counts = kallisto_quant$geneCOUNT_kall_dtu,
+                                              meta = samples, cond_name = "condition",
+                                              sample_name = "run",
+                                              level1 = "control",
+                                              level2 = "gbs_rec")
+
+
 
 dfh <- data.frame(pvalue = c(res_kall_dtu_deseq2$res$pvalue,
                              res_kall_scaledTPM_deseq2$res$pvalue,
                              res_kall_simplesum_avetxl_deseq2$res$pvalue,
                              res_kall_simplesum_deseq2$res$pvalue),
-                  mth = c(rep("dtu_kallisto, Zika", nrow(res_kall_dtu_deseq2$res)),
-                          rep("scaledTPM_kallisto, Zika", nrow(res_kall_scaledTPM_deseq2$res)),
-                          rep("simplesum_kallisto_avetxl, Zika", nrow(res_kall_simplesum_avetxl_deseq2$res)),
-                          rep("simplesum_kallisto, Zika", nrow(res_kall_simplesum_deseq2$res))))
+                  mth = c(rep("A. dtu_kallisto, Guillain-Barré \n(Recuperados)", nrow(res_kall_dtu_deseq2$res)),
+                          rep("B. scaledTPM_kallisto, Guillain-Barré \n(Recuperados)", nrow(res_kall_scaledTPM_deseq2$res)),
+                          rep("C. simplesum_kallisto_avetxl, Guillain-Barré \n(Recuperados)", nrow(res_kall_simplesum_avetxl_deseq2$res)),
+                          rep("D. simplesum_kallisto, Guillain-Barré \n(Recuperados)", nrow(res_kall_simplesum_deseq2$res))))
 ggplot(dfh, aes(x = pvalue)) + geom_histogram() + facet_wrap(~mth) + 
-  #plot_theme() + 
+  plot_theme() + 
   xlab("p-value") + ylab("count") 
 
 # PlotDispEsts DESeq2
 par(mfrow = c(2, 2))
-plotDispEsts(res_kall_dtu_deseq2$dsd, main = "dtu_kallisto, Zika")
-plotDispEsts(res_kall_scaledTPM_deseq2$dsd, main = "scaledTPM_kallisto, Zika")
-plotDispEsts(res_kall_simplesum_avetxl_deseq2$dsd, main = "simplesum_kallisto_avetxl, Zika")
-plotDispEsts(res_kall_simplesum_deseq2$dsd, main = "simplesum_kallisto, Zika")
+plotDispEsts(res_kall_dtu_deseq2$dsd, main = "A. dtu_kallisto, Guillain-Barré \n(Recuperados)")
+plotDispEsts(res_kall_scaledTPM_deseq2$dsd, main = "B. scaledTPM_kallisto, Guillain-Barré \n(Recuperados)")
+plotDispEsts(res_kall_simplesum_avetxl_deseq2$dsd, main = "C. simplesum_kallisto_avetxl, Guillain-Barré \n(Recuperados)")
+plotDispEsts(res_kall_simplesum_deseq2$dsd, main = "D. simplesum_kallisto, Guillain-Barré \n(Recuperados)")
 
 
 # Ma plots
 # avetxl = average transcripts lenght
 par(mfrow = c(2, 2))
-DESeq2::plotMA(res_kall_dtu_deseq2$dsd, main = "dtu_kallisto, Zika")
-DESeq2::plotMA(res_kall_scaledTPM_deseq2$dsd, main = "scaledTPM_kallisto, Zika")
-DESeq2::plotMA(res_kall_simplesum_avetxl_deseq2$dsd, main = "simplesum_kallisto_avetxl, Zika") 
-DESeq2::plotMA(res_kall_simplesum_deseq2$dsd, main = "simplesum_kallisto, Zika")
+DESeq2::plotMA(res_kall_dtu_deseq2$dsd, main = "A. dtu_kallisto, Guillain-Barré \n(Recuperados)")
+DESeq2::plotMA(res_kall_scaledTPM_deseq2$dsd, main = "B. scaledTPM_kallisto, Guillain-Barré")
+DESeq2::plotMA(res_kall_simplesum_avetxl_deseq2$dsd, main = "C. simplesum_kallisto_avetxl, Guillain-Barré \n(Recuperados)") 
+DESeq2::plotMA(res_kall_simplesum_deseq2$dsd, main = "D. simplesum_kallisto, Guillain-Barré \n(Recuperados)")
 
 
-par(mfrow = c(1, 1))
+#par(mfrow = c(1, 1))
 
 
 # Comparação de genes significantes encontrados em diferentes matrizes
@@ -409,29 +325,7 @@ cobraperf_deseq2 <- calculate_performance(cobra_deseq2, aspects = "overlap", thr
 cobraplot1_deseq2 <- prepare_data_for_plot(cobraperf_deseq2, incltruth = FALSE, 
                                            colorscheme = c("blue", "black", "green", "red"))
 plot_overlap(cobraplot1_deseq2, cex = c(1, 0.7, 0.7))
-title("Febre Zika Vs Controles, DTU", line = 0)
+title("Guillain-Barré Rec Vs Controles, DTU", line = 0)
 
 
 
-df1 <- Reduce(function(...) merge(..., by = "gene", all = TRUE), 
-              list(data.frame(gene = rownames(res_kall_scaledTPM_deseq2$res),
-                              scaledTPM_kallisto = res_kall_scaledTPM_deseq2$res$log2FoldChange,
-                              stringsAsFactors = FALSE),
-                   data.frame(gene = rownames(res_kall_dtu_deseq2$res),
-                              dtu_kallisto = res_kall_dtu_deseq2$res$log2FoldChange,
-                              stringsAsFactors = FALSE),
-                   data.frame(gene = rownames(res_kall_simplesum_deseq2$res),
-                              simplesum_kallisto = res_kall_simplesum_deseq2$res$log2FoldChange, 
-                              stringsAsFactors = FALSE),
-                   data.frame(gene = rownames(res_kall_simplesum_avetxl_deseq2$res),
-                              simplesum_kallisto_avetxl =
-                                res_kall_simplesum_avetxl_deseq2$res$log2FoldChange,
-                              stringsAsFactors = FALSE)))
-rownames(df1) <- df1$gene
-df1$gene <- NULL
-pairs(df1, upper.panel = panel_smooth, lower.panel = panel_cor)
-
-
-res_kall_dtu_deseq2$res
-res_kall_dtu_deseq2$res$log2FoldChange
-head(df1)

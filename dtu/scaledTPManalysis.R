@@ -237,91 +237,6 @@ kallisto_quant <- list(geneCOUNT_kall_simplesum = txi.kallisto$counts,
                        txi_kallistoscaledTPM = txi.kallisto.scaledTPM,
                        txi_kallistotx = txi.kallisto.tx)
 
-################################# Funções de Uso no Script ############################################################
-###------------------------------------- Função: dff_expression_DESeq2 --------------------------------------------
-
-diff_expression_DESeq2 <- function(txi = NULL, counts, meta, cond_name, 
-                                   level1, level2, sample_name) {
-  ## Differential expression analysis with DESeq2
-  
-  suppressPackageStartupMessages(library(DESeq2))
-  
-  ## If tximport object provided, generate DESeqDataSet from it. Otherwise, 
-  ## use the provided count matrix.
-  if (!is.null(txi)) {
-    txi$counts <- round(txi$counts)
-    keep_feat <- rownames(txi$counts[rowSums(is.na(txi$counts)) == 0 & rowSums(txi$counts) != 0, ])
-    txi <- lapply(txi, function(w) {
-      if (!is.null(dim(w))) w[match(keep_feat, rownames(w)), ]
-      else w
-    })
-    dsd <- DESeqDataSetFromTximport(txi, 
-                                    colData = meta[match(colnames(txi$counts), 
-                                                         meta[, sample_name]), ],
-                                    design = as.formula(paste0("~", cond_name)))
-  } else {
-    counts <- round(counts)
-    cts = counts[rowSums(is.na(counts)) == 0, ]
-    cts <- cts[rowSums(cts) != 0, ]
-    dsd <- DESeqDataSetFromMatrix(countData = round(cts), 
-                                  colData = meta[match(colnames(cts), 
-                                                       meta[, sample_name]), ],
-                                  design = as.formula(paste0("~", cond_name)))
-  }
-  
-  ## Estimate dispersions and fit model
-  dsd <- DESeq(dsd, test = "Wald", fitType = "local", betaPrior = TRUE)
-  res <- as.data.frame(results(dsd, contrast = c(cond_name, level2, level1),
-                               cooksCutoff = FALSE, independentFiltering = FALSE))
-  return(list(dsd = dsd, res = res))
-}
-###-----------------------------------------------------------------------------------------------------------
-
-
-###--------------------------------- Função: plot_theme ------------------------------------------------------
-
-plot_theme <- function() {
-  ## ggplot2 plotting theme
-  theme_grey() +
-    theme(legend.position = "right",
-          panel.background = element_rect(fill = "white", colour = "black"),
-          panel.grid.minor.x = element_blank(),
-          panel.grid.minor.y = element_blank(),
-          strip.text = element_text(size = 10),
-          strip.background = element_rect(fill = NA, colour = "black"),
-          axis.text.x = element_text(size = 10),
-          axis.text.y = element_text(size = 10),
-          axis.title.x = element_text(size = 15),
-          axis.title.y = element_text(size = 15),
-          plot.title = element_text(colour = "black", size = 20))
-}
-
-###------------------------------------------------------------------------------------------------------------
-
-###-------------------------------------- Função: panel_cor ---------------------------------------------------
-panel_cor <- function(x, y, digits = 3, cex.cor) {
-  ## Panel function to print Pearson and Spearman correlations
-  usr <- par("usr")
-  on.exit(par(usr))
-  par(usr = c(0, 1, 0, 1))
-  r1 <- abs(cor(x, y, method = "pearson", use = "complete"))
-  txt1 <- format(c(r1, 0.123456789), digits = digits)[1]
-  r2 <- abs(cor(x, y, method = "spearman", use = "complete"))
-  txt2 <- format(c(r2, 0.123456789), digits = digits)[1]
-  text(0.5, 0.35, paste("pearson =", txt1), cex = 1.1)
-  text(0.5, 0.65, paste("spearman =", txt2), cex = 1.1)
-}
-
-
-panel_smooth<-function (x, y, col = "blue", bg = NA, pch = ".", 
-                        cex = 0.8, ...) {
-  ## Panel function to plot points
-  points(x, y, pch = pch, col = col, bg = bg, cex = cex)
-}
----------------------------------------------------------------------------------------------------------------
-
-
-
 
 
 res_kall_simplesum_avetxl_deseq2 <-  diff_expression_DESeq2(txi = kallisto_quant$txi_kallistosimplesum,
@@ -329,51 +244,47 @@ res_kall_simplesum_avetxl_deseq2 <-  diff_expression_DESeq2(txi = kallisto_quant
                                                             meta = samples, cond_name = "condition",
                                                             sample_name = "run",
                                                             level1 = "control",
-                                                            level2 = "zika")
+                                                            level2 = "gbs")
 
 res_kall_scaledTPM_deseq2 <- diff_expression_DESeq2(txi = NULL,
                                                     counts = kallisto_quant$geneCOUNT_kall_scaledTPM,
                                                     meta = samples, cond_name = "condition",
                                                     sample_name = "run",
                                                     level1 = "control",
-                                                    level2 = "zika")
+                                                    level2 = "gbs")
   
 res_kall_simplesum_deseq2 <- diff_expression_DESeq2(txi = NULL,
                                                     counts = kallisto_quant$geneCOUNT_kall_simplesum, 
                                                     meta = samples, cond_name = "condition",
                                                     sample_name = "run",
                                                     level1 = "control",
-                                                    level2 = "zika")
+                                                    level2 = "gbs")
 
 
 
 dfh <- data.frame(pvalue = c(res_kall_scaledTPM_deseq2$res$pvalue,
                              res_kall_simplesum_avetxl_deseq2$res$pvalue,
                              res_kall_simplesum_deseq2$res$pvalue),
-                  mth = c(rep("scaledTPM_kallisto, Zika", nrow(res_kall_scaledTPM_deseq2$res)),
-                          rep("simplesum_kallisto_avetxl, Zika", nrow(res_kall_simplesum_avetxl_deseq2$res)),
-                          rep("simplesum_kallisto, Zika", nrow(res_kall_simplesum_deseq2$res))))
+                  mth = c(rep("A. scaledTPM_kallisto, Guillain-Barré", nrow(res_kall_scaledTPM_deseq2$res)),
+                          rep("B. simplesum_kallisto_avetxl, Guillain-Barré", nrow(res_kall_simplesum_avetxl_deseq2$res)),
+                          rep("C. simplesum_kallisto, Guillain-Barré)", nrow(res_kall_simplesum_deseq2$res))))
 ggplot(dfh, aes(x = pvalue)) + geom_histogram() + facet_wrap(~mth) + 
   plot_theme() + 
   xlab("p-value") + ylab("count") 
 
 # PlotDispEsts DESeq2
 par(mfrow = c(1, 3))
-plotDispEsts(res_kall_scaledTPM_deseq2$dsd, main = "scaledTPM_kallisto, Zika")
-plotDispEsts(res_kall_simplesum_avetxl_deseq2$dsd, main = "simplesum_kallisto_avetxl, Zika")
-plotDispEsts(res_kall_simplesum_deseq2$dsd, main = "simplesum_kallisto, Zika")
+plotDispEsts(res_kall_scaledTPM_deseq2$dsd, main = "A. scaledTPM_kallisto, Guillain-Barré")
+plotDispEsts(res_kall_simplesum_avetxl_deseq2$dsd, main = "B. simplesum_kallisto_avetxl, Guillain-Barré")
+plotDispEsts(res_kall_simplesum_deseq2$dsd, main = "C. simplesum_kallisto, Guillain-Barré")
 
 
 # Ma plots
 # avetxl = average transcripts lenght
 par(mfrow = c(1, 3))
-DESeq2::plotMA(res_kall_scaledTPM_deseq2$dsd, main = "scaledTPM_kallisto, Zika")
-DESeq2::plotMA(res_kall_simplesum_avetxl_deseq2$dsd, main = "simplesum_kallisto_avetxl, Zika") 
-DESeq2::plotMA(res_kall_simplesum_deseq2$dsd, main = "simplesum_kallisto, Zika")
-
-
-par(mfrow = c(1, 1))
-
+DESeq2::plotMA(res_kall_scaledTPM_deseq2$dsd, main = "A. scaledTPM_kallisto, Guillain-Barré")
+DESeq2::plotMA(res_kall_simplesum_avetxl_deseq2$dsd, main = "B. simplesum_kallisto_avetxl, Guillain-Barré") 
+DESeq2::plotMA(res_kall_simplesum_deseq2$dsd, main = "C. simplesum_kallisto, Guillain-Barré")
 
 # Comparação de genes significantes encontrados em diferentes matrizes
 cobra_deseq2 <- COBRAData(padj = data.frame(simplesum_kallisto = res_kall_simplesum_deseq2$res$padj, 
@@ -393,7 +304,7 @@ cobraperf_deseq2 <- calculate_performance(cobra_deseq2, aspects = "overlap", thr
 cobraplot1_deseq2 <- prepare_data_for_plot(cobraperf_deseq2, incltruth = FALSE, 
                                            colorscheme = c("blue", "red", "black"))
 plot_overlap(cobraplot1_deseq2, cex = c(1, 0.7, 0.7))
-title("Febre Zika Vs Controles", line = 0)
+title("Febre Guillain-Barré Rec Vs Controles", line = 0)
 
 
 # Comparação de estimativas logFC todos os metodos
@@ -439,7 +350,7 @@ df2$scaledTPM_kallisto_basemeanbinary <- Hmisc::cut2(df2$scaledTPM_kallisto_base
 df2$simplesum_kallisto_basemeanbinary <- Hmisc::cut2(df2$simplesum_kallisto_basemean, g = 2)
 df2$simplesum_kallisto_avetxl_basemeanbinary <- Hmisc::cut2(df2$simplesum_kallisto_avetxl_basemean, g = 2)
 df2$sumA <- rowSums(df2[, meta$run[meta$condition == "control"]])
-df2$sumB <- rowSums(df2[, meta$run[meta$condition == "zika"]])
+df2$sumB <- rowSums(df2[, meta$run[meta$condition == "gbs_rec"]])
 df2$allzero_onecond <- "Expresso em ambos os grupos"
 df2$allzero_onecond[union(which(df2$sumA == 0), which(df2$sumB == 0))] <- "Expresso em um grupo"
 df2$onecol <- rep("", nrow(df2))
@@ -447,7 +358,7 @@ df2$onecol <- rep("", nrow(df2))
 ggplot(df2, aes(x = simplesum_kallisto_logFC, y = scaledTPM_kallisto_logFC, col = onecol)) + 
   geom_abline(intercept = 0, slope = 1) + 
   geom_point(size = 2, alpha = 0.5) + 
-  plot_theme() + ggtitle("Estimativas logFC, Zika") + theme(legend.position = "bottom") + 
+  plot_theme() + ggtitle("Estimativas logFC, Guillain-Barré rec") + theme(legend.position = "bottom") + 
   scale_color_manual(values = c("blue"), name = "") + 
   theme(legend.background = element_rect(fill = "white"), legend.key = element_blank()) + 
   xlab("simplesum_kallisto, logFC") + ylab("scaledTPM_kallisto, logFC") + 
@@ -458,7 +369,7 @@ ggplot(df2, aes(x = simplesum_kallisto_logFC, y = scaledTPM_kallisto_logFC, col 
 ggplot(df2, aes(x = simplesum_kallisto_logFC, y = scaledTPM_kallisto_logFC, col = allzero_onecond)) + 
   geom_abline(intercept = 0, slope = 1) + 
   geom_point(size = 2, alpha = 0.5) + 
-  plot_theme() + ggtitle("Estimativas logFC, Zika") + theme(legend.position = "bottom") + 
+  plot_theme() + ggtitle("Estimativas logFC, Guillain-Barré rec") + theme(legend.position = "bottom") + 
   scale_color_manual(values = c("blue", "red"), name = "") + 
   xlab("simplesum_kallisto, logFC") + ylab("scaledTPM_kallisto, logFC") + 
   guides(colour = guide_legend(override.aes = list(size = 7)))
@@ -471,7 +382,7 @@ ggplot(subset(df2, !is.na(scaledTPM_kallisto_basemeanbinary)),
   geom_abline(intercept = 0, slope = 1) + 
   geom_point(size = 2, alpha = 0.5) + 
   facet_wrap(~scaledTPM_kallisto_basemeanbinary) + 
-  plot_theme() + ggtitle("Estimativas logFC, Zika") + theme(legend.position = "bottom") + 
+  plot_theme() + ggtitle("Estimativas logFC, Guillain-Barré rec") + theme(legend.position = "bottom") + 
   xlab("simplesum_kallisto, logFC") + ylab("scaledTPM_kallisto, logFC") + 
   scale_color_manual(values = c("red", "blue"), name = "scaledTPM_kallisto, base mean") + 
   guides(colour = guide_legend(override.aes = list(size = 7)))
