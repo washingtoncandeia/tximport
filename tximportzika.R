@@ -20,6 +20,7 @@ library(PoiClaCluse)
 library(genefilter)
 library(ggplot2)
 
+# set
 setwd("/data4/waraujo")
 
 ## Parte 1 - Preparação de dados das amostras de kallisto.
